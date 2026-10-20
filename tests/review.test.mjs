@@ -116,3 +116,10 @@ test('user management: create, reset password, deactivate', async () => {
   U.setActive(u.id, false, 999);
   assert.equal(U.listUsers().find((x) => x.id === u.id).active, 0);
 });
+
+test('specific completeness filters', () => {
+  const ids = (c) => B.listBeneficiaries({ entityId: 2, completeness: c, grouped: false }).rows.map((r) => r.id).sort();
+  assert.deepEqual(ids('no_photo'), [3]);
+  assert.deepEqual(ids('no_dob'), [3]);
+  assert.deepEqual(ids('no_employee'), []);
+});

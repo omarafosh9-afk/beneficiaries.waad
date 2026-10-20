@@ -272,7 +272,10 @@ export default function ReviewBoard({ mode, user }) {
             <select value={completeness} onChange={(e) => setCompleteness(e.target.value)} className="h-10 px-3 border border-[#D5DCE6] rounded-[10px] bg-white">
               <option value="">الكل</option>
               <option value="complete">مكتملة</option>
-              <option value="missing">ناقصة (صورة أو مواليد)</option>
+              <option value="missing">أي نقص (صورة أو مواليد)</option>
+              <option value="no_photo">نقص صورة</option>
+              <option value="no_dob">نقص مواليد</option>
+              <option value="no_employee">نقص الموظف (الاسم أو الرقم الوظيفي)</option>
             </select>
           </Field>
           {!!data?.intakeBatches?.length && (
