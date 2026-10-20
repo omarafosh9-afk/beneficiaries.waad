@@ -219,7 +219,14 @@ export default function ReviewBoard({ mode, user }) {
       {isTpa && (
         <>
           <section className="bg-white border border-[#E3E8EF] rounded-2xl px-5 py-3.5">
-            <Tabs tabs={tabs} tab={tab} setTab={setTab} />
+            <div className="flex items-center gap-3">
+              <div className="flex-1 min-w-0 overflow-x-auto">
+                <Tabs tabs={tabs} tab={tab} setTab={setTab} nowrap />
+              </div>
+              <button type="button" className={`${btn.primary} shrink-0 whitespace-nowrap`} disabled={!allMatching && !sel.size} onClick={openForward}>
+                <Icon name="send" />ترحيل المحدد للمطبعة {selCount === null ? '(كل المطابق)' : `(${selCount})`}
+              </button>
+            </div>
           </section>
         </>
       )}
@@ -286,11 +293,7 @@ export default function ReviewBoard({ mode, user }) {
             </div>
           )}
           <a href={exportHref} className={btn.ghost}><Icon name="download" />تصدير</a>
-          {isTpa ? (
-            <button type="button" className={btn.primary} disabled={!allMatching && !sel.size} onClick={openForward}>
-              <Icon name="send" />ترحيل المحدد للمطبعة {selCount === null ? '(كل المطابق)' : `(${selCount})`}
-            </button>
-          ) : (
+          {isTpa ? null : (
             <button type="button" className={btn.primary} disabled={!allMatching && !sel.size} onClick={() => openApprove()}>
               <Icon name="check" strokeWidth={2.4} />اعتماد المحدد {selCount === null ? '(كل المطابق)' : `(${selCount})`}
             </button>
@@ -447,14 +450,14 @@ function Field({ label, children, grow, width }) {
   );
 }
 
-function Tabs({ tabs, tab, setTab }) {
+function Tabs({ tabs, tab, setTab, nowrap }) {
   return (
-    <nav aria-label="تصفية حسب الحالة" className="flex flex-wrap gap-2">
+    <nav aria-label="تصفية حسب الحالة" className={`flex gap-2 ${nowrap ? 'flex-nowrap' : 'flex-wrap'}`}>
       {tabs.map((t) => {
         const on = tab === t.key;
         return (
           <button key={t.key} type="button" onClick={() => setTab(t.key)} aria-pressed={on}
-            className={`inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full border text-sm font-semibold ${on ? 'bg-[#1D4ED8] text-white border-[#1D4ED8]' : 'bg-white text-[#344054] border-[#D5DCE6]'}`}>
+            className={`inline-flex shrink-0 whitespace-nowrap items-center gap-1.5 h-9 px-3.5 rounded-full border text-sm font-semibold ${on ? 'bg-[#1D4ED8] text-white border-[#1D4ED8]' : 'bg-white text-[#344054] border-[#D5DCE6]'}`}>
             {t.label}
             <span className="min-w-[26px] px-2 rounded-full text-xs font-bold leading-[22px] text-center"
               style={on ? { background: '#FFFFFF', color: '#1D4ED8' } : { background: t.soft.bg, color: t.soft.fg }}>
