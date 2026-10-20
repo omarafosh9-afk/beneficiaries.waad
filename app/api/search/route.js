@@ -1,12 +1,12 @@
 import fs from 'fs';
 import path from 'path';
+import { loadLegacyPeople, saveLegacyPeople } from '../../../lib/beneficiaries.js';
+import { STORAGE_DIR } from '../../../lib/db.js';
+import { requireUser } from '../../../lib/auth.js';
 import { NextResponse } from 'next/server';
 
-// بلا تخزين مؤقت: الملف صغير بما يكفي لقراءته في كل طلب، وهذا يتجنب مشكلة
-// تكرّرت سابقا (بيانات قديمة معروضة رغم تعديل الملف فعليا).
 function loadPeople() {
-  const p = path.join(process.cwd(), 'data', 'people.json');
-  return JSON.parse(fs.readFileSync(p, 'utf-8'));
+  return loadLegacyPeople();
 }
 
 const CARD_BASE_RE = /^[A-Z]+2025(\d+)/i;
@@ -74,6 +74,11 @@ function cardNumericPart(card) {
 }
 
 export async function GET(request) {
+  try {
+    await requireUser(['tpa']);
+  } catch (e) {
+    return NextResponse.json({ error: e.message }, { status: e.status || 403 });
+  }
   const { searchParams } = new URL(request.url);
   const qRaw = String(searchParams.get('q') || '').trim();
   const q = normalize(qRaw);
@@ -154,7 +159,7 @@ export async function GET(request) {
 
   // أضف hasPhoto لكل النتائج المطابقة (قبل فلترة الصورة، لأن الفلترة تعتمد عليها)
   results = results.map((p) => {
-    const photoPath = path.join(process.cwd(), 'public', 'storage', p.company, `${p.photoSlug}.webp`);
+    const photoPath = path.join(STORAGE_DIR, p.company, `${p.photoSlug}.webp`);
     return { ...p, hasPhoto: fs.existsSync(photoPath) };
   });
 

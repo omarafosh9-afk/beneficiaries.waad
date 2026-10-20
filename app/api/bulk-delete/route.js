@@ -1,17 +1,24 @@
 import fs from 'fs';
 import path from 'path';
+import { loadLegacyPeople, saveLegacyPeople } from '../../../lib/beneficiaries.js';
+import { STORAGE_DIR } from '../../../lib/db.js';
+import { requireUser } from '../../../lib/auth.js';
 import { NextResponse } from 'next/server';
 
 // حذف ناعم جماعي: يعلّم كل الأشخاص المحددين كمحذوفين بدل مسحهم، بنفس منطق
 // الحذف الفردي في actions.js (deletePerson) لكن دفعة واحدة.
 export async function POST(request) {
+  try {
+    await requireUser(['tpa']);
+  } catch (e) {
+    return NextResponse.json({ error: e.message }, { status: e.status || 403 });
+  }
   const { ids } = await request.json();
   if (!Array.isArray(ids) || !ids.length) {
     return NextResponse.json({ error: 'لا توجد عناصر محددة' }, { status: 400 });
   }
 
-  const dataPath = path.join(process.cwd(), 'data', 'people.json');
-  const people = JSON.parse(fs.readFileSync(dataPath, 'utf-8'));
+  const people = loadLegacyPeople();
   const idSet = new Set(ids);
   const now = new Date().toISOString();
 
@@ -24,6 +31,6 @@ export async function POST(request) {
     }
   }
 
-  fs.writeFileSync(dataPath, JSON.stringify(people, null, 0), 'utf-8');
+  saveLegacyPeople(people);
   return NextResponse.json({ ok: true, count });
 }

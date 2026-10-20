@@ -1,9 +1,17 @@
 import * as XLSX from 'xlsx';
+import { loadLegacyPeople, saveLegacyPeople } from '../../../lib/beneficiaries.js';
+import { STORAGE_DIR } from '../../../lib/db.js';
+import { requireUser } from '../../../lib/auth.js';
 import { NextResponse } from 'next/server';
 
 // يحوّل تقرير الاستيراد (المرسل من العميل بعد تنفيذ importExcel) إلى ملف
 // إكسل قابل للتنزيل، بنفس الأعمدة المعروضة في الجدول داخل الأداة.
 export async function POST(request) {
+  try {
+    await requireUser(['tpa']);
+  } catch (e) {
+    return NextResponse.json({ error: e.message }, { status: e.status || 403 });
+  }
   const { report } = await request.json();
   if (!Array.isArray(report) || !report.length) {
     return NextResponse.json({ error: 'لا يوجد تقرير' }, { status: 400 });

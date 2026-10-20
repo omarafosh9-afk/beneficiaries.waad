@@ -266,7 +266,7 @@ export default function SearchClient({ onPick, refreshKey }) {
               {p.hasPhoto ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={`/storage/${p.company}/${encodeURIComponent(p.photoSlug)}.webp`}
+                  src={`/photos/${p.company}/${encodeURIComponent(p.photoSlug)}.webp`}
                   alt={p.name}
                   className="w-full h-full object-cover"
                 />

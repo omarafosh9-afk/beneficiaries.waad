@@ -1,0 +1,16 @@
+# تشغيل المنظومة بجانب أنظمة أخرى على نفس الخادم: كل نظام على منفذ داخلي مختلف،
+# والرابط الخارجي (نطاق فرعي مثل beneficiaries.example.com) يوجّهه الـ reverse proxy.
+services:
+  beneficiaries:
+    build: .
+    image: beneficiary-viewer:latest
+    container_name: beneficiaries
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3100:3000"   # يُفتح للـ reverse proxy فقط، لا للإنترنت مباشرة
+    environment:
+      SESSION_SECRET: ${SESSION_SECRET:?اكتب SESSION_SECRET في ملف .env}
+      COOKIE_SECURE: "true"     # اجعلها false فقط عند التجربة بلا HTTPS
+    volumes:
+      - ./data:/data            # قاعدة البيانات app.db والنسخ الاحتياطية
+      - ./storage:/storage      # الصور: storage/Cement ، storage/Jalyana ، storage/Jamarek

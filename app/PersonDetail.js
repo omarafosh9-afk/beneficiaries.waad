@@ -54,7 +54,7 @@ export default function PersonDetail({ person, onClose, onSaved }) {
   if (!current) return null;
   const p = current;
 
-  const photoUrl = `/storage/${p.company}/${encodeURIComponent(p.photoSlug)}.webp?v=${bump}`;
+  const photoUrl = `/photos/${p.company}/${encodeURIComponent(p.photoSlug)}.webp?v=${bump}`;
   const card = p.card1 || p.card2 || '';
   const downloadName = `${p.name}_${card}`.replace(/[\\/:*?"<>|]/g, ' ').replace(/\s+/g, ' ').trim() + '.webp';
 

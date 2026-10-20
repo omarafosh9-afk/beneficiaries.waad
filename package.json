@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "build-data": "node scripts/build-data.js"
+    "build-data": "node scripts/build-data.js",
+    "test": "node --no-warnings --test \"tests/*.test.mjs\"",
+    "db:import": "node --no-warnings scripts/db-import.mjs",
+    "db:backup": "node --no-warnings scripts/db-backup.mjs",
+    "user:add": "node --no-warnings scripts/user-add.mjs"
   },
   "dependencies": {
     "next": "16.3.1",
@@ -18,5 +22,8 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "tailwindcss": "^4"
+  },
+  "engines": {
+    "node": ">=24"
   }
 }

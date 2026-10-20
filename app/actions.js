@@ -3,6 +3,9 @@
 import fs from 'fs';
 import path from 'path';
 import sharp from 'sharp';
+import { loadLegacyPeople, saveLegacyPeople } from '../lib/beneficiaries.js';
+import { STORAGE_DIR } from '../lib/db.js';
+import { requireUser } from '../lib/auth.js';
 import * as XLSX from 'xlsx';
 
 function safeSlug(name, card) {
@@ -17,7 +20,7 @@ async function savePhotoIfProvided(formData, person) {
   const file = formData.get('file');
   if (!file || typeof file === 'string' || !file.size) return;
 
-  const dir = path.join(process.cwd(), 'public', 'storage', person.company);
+  const dir = path.join(STORAGE_DIR, person.company);
   fs.mkdirSync(dir, { recursive: true });
   const outPath = path.join(dir, `${person.photoSlug}.webp`);
 
@@ -91,16 +94,16 @@ function findDuplicates(people, { name, card1, card2, company, excludeId }) {
 
 const EDITABLE_FIELDS = ['name', 'dob', 'card1', 'relation', 'company'];
 
-// يعدّل بيانات شخص مباشرة في data/people.json (طبقة التطبيق)، ويعيد تسمية
+// يعدّل بيانات شخص في قاعدة البيانات (عبر محوّل الشاشة القديمة)، ويعيد تسمية
 // ملف صورته إن تغيّر الاسم أو رقم البطاقة حتى لا ينقطع الربط بها.
 // يفحص التكرار أولا؛ إن وُجد اشتباه يوقف الحفظ ويعرضه، إلا إن أكّد المستخدم صراحة.
 export async function updatePerson(prevState, formData) {
   try {
+    await requireUser(['tpa']);
     const id = Number(formData.get('id'));
     if (!id) return { ok: false, message: 'معرّف غير صالح.' };
 
-    const dataPath = path.join(process.cwd(), 'data', 'people.json');
-    const people = JSON.parse(fs.readFileSync(dataPath, 'utf-8'));
+    const people = loadLegacyPeople();
     const idx = people.findIndex((p) => p.id === id);
     if (idx === -1) return { ok: false, message: 'الشخص غير موجود.' };
 
@@ -129,8 +132,8 @@ export async function updatePerson(prevState, formData) {
     person.photoSlug = newSlug;
 
     if (newSlug !== oldSlug || person.company !== oldCompany) {
-      const oldDir = path.join(process.cwd(), 'public', 'storage', oldCompany);
-      const newDir = path.join(process.cwd(), 'public', 'storage', person.company);
+      const oldDir = path.join(STORAGE_DIR, oldCompany);
+      const newDir = path.join(STORAGE_DIR, person.company);
       fs.mkdirSync(newDir, { recursive: true });
       const oldPath = path.join(oldDir, `${oldSlug}.webp`);
       const newPath = path.join(newDir, `${newSlug}.webp`);
@@ -142,7 +145,7 @@ export async function updatePerson(prevState, formData) {
     await savePhotoIfProvided(formData, person);
 
     people[idx] = person;
-    fs.writeFileSync(dataPath, JSON.stringify(people, null, 0), 'utf-8');
+    saveLegacyPeople(people);
 
     return { ok: true, message: 'تم حفظ التعديلات.', person };
   } catch (err) {
@@ -152,11 +155,12 @@ export async function updatePerson(prevState, formData) {
 
 const COMPANY_LABELS = { Cement: 'الاسمنت', Jalyana: 'جليانة', Jamarek: 'الجمارك' };
 
-// يضيف شخصا جديدا مباشرة في data/people.json (طبقة التطبيق) - لإضافات يدوية
+// يضيف شخصا جديدا في قاعدة البيانات (عبر محوّل الشاشة القديمة) - لإضافات يدوية
 // سريعة داخل الأداة، بمعزل عن ملفات الإكسل المرجعية.
 // يفحص التكرار أولا (بطاقة/اسم) ويوقف الحفظ عند أي اشتباه إلا بتأكيد صريح.
 export async function addPerson(prevState, formData) {
   try {
+    await requireUser(['tpa']);
     const company = String(formData.get('company') || '').trim();
     const name = String(formData.get('name') || '').trim();
     const card1 = String(formData.get('card1') || '').trim();
@@ -166,8 +170,7 @@ export async function addPerson(prevState, formData) {
       return { ok: false, message: 'الشركة والاسم ورقم البطاقة الأول حقول إلزامية.' };
     }
 
-    const dataPath = path.join(process.cwd(), 'data', 'people.json');
-    const people = JSON.parse(fs.readFileSync(dataPath, 'utf-8'));
+    const people = loadLegacyPeople();
 
     const confirmed = formData.get('confirmDuplicate') === '1';
     if (!confirmed) {
@@ -205,7 +208,7 @@ export async function addPerson(prevState, formData) {
     await savePhotoIfProvided(formData, newPerson);
 
     people.push(newPerson);
-    fs.writeFileSync(dataPath, JSON.stringify(people, null, 0), 'utf-8');
+    saveLegacyPeople(people);
 
     return { ok: true, message: 'تمت إضافة الشخص.', person: newPerson };
   } catch (err) {
@@ -217,17 +220,17 @@ export async function addPerson(prevState, formData) {
 // الافتراضي مع بقاء إمكانية استعادته لاحقا.
 export async function deletePerson(prevState, formData) {
   try {
+    await requireUser(['tpa']);
     const id = Number(formData.get('id'));
     if (!id) return { ok: false, message: 'معرّف غير صالح.' };
 
-    const dataPath = path.join(process.cwd(), 'data', 'people.json');
-    const people = JSON.parse(fs.readFileSync(dataPath, 'utf-8'));
+    const people = loadLegacyPeople();
     const idx = people.findIndex((p) => p.id === id);
     if (idx === -1) return { ok: false, message: 'الشخص غير موجود.' };
 
     people[idx].deleted = true;
     people[idx].deletedAt = new Date().toISOString();
-    fs.writeFileSync(dataPath, JSON.stringify(people, null, 0), 'utf-8');
+    saveLegacyPeople(people);
 
     return { ok: true, message: 'تم حذف البطاقة (يمكن استعادتها لاحقا).', person: people[idx] };
   } catch (err) {
@@ -260,6 +263,7 @@ function findHeaderCol(headers, pattern) {
 // إلا إن فُعِّل "confirmDuplicates" (إضافة رغم التكرار للكل).
 export async function importExcel(prevState, formData) {
   try {
+    await requireUser(['tpa']);
     const company = String(formData.get('company') || '').trim();
     const file = formData.get('file');
     const confirmDuplicates = formData.get('confirmDuplicates') === '1';
@@ -288,8 +292,7 @@ export async function importExcel(prevState, formData) {
     const cardCol = findHeaderCol(headers, /بطاقة|card/i);
     const dobCol = findHeaderCol(headers, /ميلاد|مواليد|تاريخ|dob|birth/i);
 
-    const dataPath = path.join(process.cwd(), 'data', 'people.json');
-    const people = JSON.parse(fs.readFileSync(dataPath, 'utf-8'));
+    const people = loadLegacyPeople();
     const safe = (s) => String(s || '').replace(/[\\/:*?"<>|]/g, ' ').replace(/\s+/g, ' ').trim();
 
     const report = [];
@@ -338,7 +341,7 @@ export async function importExcel(prevState, formData) {
 
     if (toAdd.length) {
       const merged = [...people, ...toAdd];
-      fs.writeFileSync(dataPath, JSON.stringify(merged, null, 0), 'utf-8');
+      saveLegacyPeople(merged);
     }
 
     const summary = {
@@ -358,6 +361,7 @@ export async function importExcel(prevState, formData) {
 // معالجة الملف كاملا - لتفادي إضافة الصفوف السليمة التي أُضيفت بالفعل مرتين).
 export async function forceAddSkippedRows(prevState, formData) {
   try {
+    await requireUser(['tpa']);
     const company = String(formData.get('company') || '').trim();
     const rowsJson = String(formData.get('rowsJson') || '[]');
     const rows = JSON.parse(rowsJson);
@@ -365,8 +369,7 @@ export async function forceAddSkippedRows(prevState, formData) {
       return { ok: false, message: 'لا توجد صفوف لإضافتها.' };
     }
 
-    const dataPath = path.join(process.cwd(), 'data', 'people.json');
-    const people = JSON.parse(fs.readFileSync(dataPath, 'utf-8'));
+    const people = loadLegacyPeople();
     const safe = (s) => String(s || '').replace(/[\\/:*?"<>|]/g, ' ').replace(/\s+/g, ' ').trim();
     let nextId = Math.max(0, ...people.map((p) => p.id));
 
@@ -391,7 +394,7 @@ export async function forceAddSkippedRows(prevState, formData) {
       });
     }
 
-    fs.writeFileSync(dataPath, JSON.stringify([...people, ...toAdd], null, 0), 'utf-8');
+    saveLegacyPeople([...people, ...toAdd]);
     return { ok: true, message: `أُضيف ${toAdd.length} من حالات التكرار المتخطاة.`, addedCount: toAdd.length };
   } catch (err) {
     return { ok: false, message: 'خطأ: ' + err.message };
@@ -401,17 +404,17 @@ export async function forceAddSkippedRows(prevState, formData) {
 // يستعيد شخصا محذوفا سابقا.
 export async function restorePerson(prevState, formData) {
   try {
+    await requireUser(['tpa']);
     const id = Number(formData.get('id'));
     if (!id) return { ok: false, message: 'معرّف غير صالح.' };
 
-    const dataPath = path.join(process.cwd(), 'data', 'people.json');
-    const people = JSON.parse(fs.readFileSync(dataPath, 'utf-8'));
+    const people = loadLegacyPeople();
     const idx = people.findIndex((p) => p.id === id);
     if (idx === -1) return { ok: false, message: 'الشخص غير موجود.' };
 
     people[idx].deleted = false;
     delete people[idx].deletedAt;
-    fs.writeFileSync(dataPath, JSON.stringify(people, null, 0), 'utf-8');
+    saveLegacyPeople(people);
 
     return { ok: true, message: 'تمت استعادة البطاقة.', person: people[idx] };
   } catch (err) {
