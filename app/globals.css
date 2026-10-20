@@ -75,6 +75,8 @@
 }
 
 html {
+  /* حجم الخط الأساسي أصغر قليلا (يتبعه كل ما يقاس بـ rem) */
+  font-size: 15px;
   background: var(--background);
   color-scheme: light;
 }
@@ -83,4 +85,5 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: "Tajawal", system-ui, "Segoe UI", Tahoma, sans-serif;
+  font-size: 14px;
 }
