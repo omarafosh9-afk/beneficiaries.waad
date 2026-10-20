@@ -196,7 +196,7 @@ export default function ReviewBoard({ mode, user }) {
   return (
     <div className="flex flex-col gap-3">
       {!isTpa && (
-        <section className="bg-white border border-[#E3E8EF] rounded-2xl px-4 py-3 flex flex-col gap-3">
+        <section className="bg-white border border-[#E3E8EF] rounded-xl px-3 py-2 flex flex-col gap-2">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2.5">
             {!fixedEntity && (
               <label className="flex items-center gap-2 font-semibold">
@@ -222,7 +222,7 @@ export default function ReviewBoard({ mode, user }) {
 
       {isTpa && (
         <>
-          <section className="bg-white border border-[#E3E8EF] rounded-2xl px-4 py-2.5">
+          <section className="bg-white border border-[#E3E8EF] rounded-xl px-3 py-2">
             <div className="overflow-x-auto">
               <Tabs tabs={tabs} tab={tab} setTab={setTab} nowrap />
             </div>
@@ -237,7 +237,7 @@ export default function ReviewBoard({ mode, user }) {
       )}
 
       <section className="bg-white border border-[#E3E8EF] rounded-2xl overflow-hidden">
-        <div className="flex flex-wrap items-end gap-3 px-4 py-3 border-b border-[#EEF1F5]">
+        <div className="flex flex-wrap items-end gap-2 px-3 py-2 border-b border-[#EEF1F5]">
           <Field label="بحث" grow>
             <div className="relative">
               <Icon name="search" className="absolute top-[13px] right-3 text-[#5B6475]" />
@@ -462,9 +462,9 @@ function Tabs({ tabs, tab, setTab, nowrap }) {
         const on = tab === t.key;
         return (
           <button key={t.key} type="button" onClick={() => setTab(t.key)} aria-pressed={on}
-            className={`inline-flex shrink-0 whitespace-nowrap items-center gap-1.5 h-9 px-3.5 rounded-full border text-sm font-semibold ${on ? 'bg-[#1D4ED8] text-white border-[#1D4ED8]' : 'bg-white text-[#344054] border-[#D5DCE6]'}`}>
+            className={`inline-flex shrink-0 whitespace-nowrap items-center gap-1.5 h-8 px-3 rounded-full border text-[13px] font-semibold ${on ? 'bg-[#1D4ED8] text-white border-[#1D4ED8]' : 'bg-white text-[#344054] border-[#D5DCE6]'}`}>
             {t.label}
-            <span className="min-w-[26px] px-2 rounded-full text-xs font-bold leading-[22px] text-center"
+            <span className="min-w-[22px] px-1.5 rounded-full text-[11px] font-bold leading-[18px] text-center"
               style={on ? { background: '#FFFFFF', color: '#1D4ED8' } : { background: t.soft.bg, color: t.soft.fg }}>
               {t.count.toLocaleString('en')}
             </span>
