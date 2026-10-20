@@ -74,12 +74,15 @@ test('edit requires reason and real change, records old value', () => {
 test('needs_edit cannot be approved; forward only ready, per entity batch, then locked', () => {
   B.returnForEdit(4, 'الصورة غير واضحة', 'tpa');
   assert.equal(B.approve({ ids: [4] }, 't').approved, 0);
-  B.approve({ ids: [3, 5] }, 't');
+  const ar = B.approve({ ids: [3, 5] }, 't');
+  assert.equal(ar.approved, 1);
+  assert.deepEqual(ar.incomplete, [{ id: 3, name: 'مريم سالم الورفلي', missing: ['الصورة', 'المواليد'] }]);
+  assert.equal(B.previewApproval({ ids: [3] }).incompleteCount, 1);
   const pv = B.previewForward({ ids: [1, 2, 3, 5] });
   assert.equal(pv.ready, 3); // 3 has no photo/dob
   const batches = B.forward({ ids: [1, 2, 3, 5] }, 'tpa');
   assert.equal(batches.length, 2);
-  assert.equal(B.getBeneficiary(3).review_status, 'correct');
+  assert.equal(B.getBeneficiary(3).review_status, 'pending'); // ناقص: لا يُعتمد
   assert.equal(B.getBeneficiary(1).review_status, 'forwarded');
   const b1 = B.getBeneficiary(1);
   assert.throws(() => B.editBeneficiary({ id: 1, version: b1.version, name: 'x y', relation: b1.relation, dob: b1.dob, reason: 'r' }, 't'), /مقفل/);

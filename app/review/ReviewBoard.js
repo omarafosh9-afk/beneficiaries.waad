@@ -4,7 +4,7 @@
 //  - mode="tpa": شاشة الشركة (كل الجهات، إعادة للتعديل، ترحيل الجاهز للمطبعة).
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  STATUS, LOCKED, Icon, StatusBadge, Photo, Checkbox, Prev, Dialog, btn, relLabel, dobText, isReady,
+  STATUS, LOCKED, missingOf, Icon, StatusBadge, Photo, Checkbox, Prev, Dialog, btn, relLabel, dobText, isReady,
   records, membersLabel, cardsLabel,
 } from './ui';
 import {
@@ -147,12 +147,13 @@ export default function ReviewBoard({ mode, user }) {
     if (!r.ok) return say(r.error);
     setSel(new Set());
     setAllMatching(false);
-    say(`تم الاعتماد: ${records(r.result.approved)}`);
+    say(`تم الاعتماد: ${records(r.result.approved)}${r.result.incompleteCount ? ` — لم يُعتمد ${records(r.result.incompleteCount)} لنقص البيانات` : ''}`);
     reload();
   }
   async function approveOne(m) {
     const r = await approveAction({ ids: [m.id] });
     if (!r.ok) return say(r.error);
+    if (!r.result.approved) return say(r.result.incomplete.length ? `لا يمكن اعتماد ${m.name}: ينقصه ${r.result.incomplete[0].missing.join(' و')}` : `لم يُعتمد ${m.name}`);
     say(`تم اعتماد بيانات ${m.name} كما هي`);
     reload();
   }
@@ -199,7 +200,7 @@ export default function ReviewBoard({ mode, user }) {
                 <select value={entity} onChange={(e) => {
                   setEntity(Number(e.target.value));
                   try { localStorage.setItem('review.entity', e.target.value); } catch {}
-                }} className="h-11 px-3 border border-[#D5DCE6] rounded-[10px] bg-white">
+                }} className="h-10 px-3 border border-[#D5DCE6] rounded-[10px] bg-white">
                   {ENTITIES.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
                 </select>
               </label>
@@ -231,7 +232,7 @@ export default function ReviewBoard({ mode, user }) {
               <Icon name="search" className="absolute top-[13px] right-3 text-[#5B6475]" />
               <input type="search" value={qInput} onChange={(e) => setQInput(e.target.value)}
                 placeholder="الاسم أو الرقم الوظيفي أو رقم البطاقة"
-                className="w-full h-11 pr-10 pl-3 border border-[#D5DCE6] rounded-[10px] bg-white" />
+                className="w-full h-10 pr-10 pl-3 border border-[#D5DCE6] rounded-[10px] bg-white" />
             </div>
           </Field>
           {isTpa && (
@@ -239,13 +240,13 @@ export default function ReviewBoard({ mode, user }) {
               <select value={entity} onChange={(e) => {
                 setEntity(Number(e.target.value));
                 try { localStorage.setItem('review.entity', e.target.value); } catch {}
-              }} className="h-11 px-3 border border-[#D5DCE6] rounded-[10px] bg-white">
+              }} className="h-10 px-3 border border-[#D5DCE6] rounded-[10px] bg-white">
                 {ENTITIES.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
               </select>
             </Field>
           )}
           <Field label="صلة القرابة" width="w-36">
-            <select value={relation} onChange={(e) => setRelation(e.target.value)} className="h-11 px-3 border border-[#D5DCE6] rounded-[10px] bg-white">
+            <select value={relation} onChange={(e) => setRelation(e.target.value)} className="h-10 px-3 border border-[#D5DCE6] rounded-[10px] bg-white">
               <option value="">الكل</option>
               <option value="موظف أساسي">موظف</option>
               <option value="زوجة">زوجة</option>
@@ -257,7 +258,7 @@ export default function ReviewBoard({ mode, user }) {
             </select>
           </Field>
           <Field label="اكتمال البيانات" width="w-48">
-            <select value={completeness} onChange={(e) => setCompleteness(e.target.value)} className="h-11 px-3 border border-[#D5DCE6] rounded-[10px] bg-white">
+            <select value={completeness} onChange={(e) => setCompleteness(e.target.value)} className="h-10 px-3 border border-[#D5DCE6] rounded-[10px] bg-white">
               <option value="">الكل</option>
               <option value="complete">مكتملة</option>
               <option value="missing">ناقصة (صورة أو مواليد)</option>
@@ -265,13 +266,13 @@ export default function ReviewBoard({ mode, user }) {
           </Field>
           {!!data?.intakeBatches?.length && (
             <Field label="دفعة القائمة" width="w-40">
-              <select value={intake} onChange={(e) => setIntake(e.target.value)} className="h-11 px-3 border border-[#D5DCE6] rounded-[10px] bg-white">
+              <select value={intake} onChange={(e) => setIntake(e.target.value)} className="h-10 px-3 border border-[#D5DCE6] rounded-[10px] bg-white">
                 <option value="">الكل</option>
                 {data.intakeBatches.map((b) => <option key={b} value={b}>{b === 1 ? 'الدفعة الأولى' : `الدفعة ${b}`}</option>)}
               </select>
             </Field>
           )}
-          <label className="flex items-center gap-2 h-11 px-3.5 border border-[#D5DCE6] rounded-[10px] bg-white cursor-pointer font-medium whitespace-nowrap">
+          <label className="flex items-center gap-2 h-10 px-3 border border-[#D5DCE6] rounded-[10px] bg-white cursor-pointer text-[13px] font-medium whitespace-nowrap">
             <input type="checkbox" checked={grouped} onChange={() => setGrouped(!grouped)} className="w-[18px] h-[18px] m-0 accent-[#1D4ED8]" />
             تجميع حسب العائلة
           </label>
@@ -279,7 +280,7 @@ export default function ReviewBoard({ mode, user }) {
             <div className="flex gap-0.5 p-0.5 border border-[#D5DCE6] rounded-xl bg-white">
               {[['table', 'جدول', 'table'], ['cards', 'كروت', 'grid']].map(([k, label, icon]) => (
                 <button key={k} type="button" onClick={() => setView(k)} aria-pressed={view === k}
-                  className={`inline-flex items-center gap-1.5 h-11 px-3.5 rounded-[10px] font-semibold ${view === k ? 'bg-[#1D4ED8] text-white' : 'bg-white text-[#344054]'}`}>
+                  className={`inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-[13px] font-semibold ${view === k ? 'bg-[#1D4ED8] text-white' : 'bg-white text-[#344054]'}`}>
                   <Icon name={icon} />{label}
                 </button>
               ))}
@@ -372,6 +373,15 @@ export default function ReviewBoard({ mode, user }) {
       {dialog?.kind === 'approve' && (
         <Dialog title="اعتماد السجلات المحددة" onClose={() => setDialog(null)}>
           <Count bg="#E7F6EC" fg="#126B33" label="ستُعتمد وتصبح «صحيح»" n={dialog.counts.approve} />
+          {!!dialog.counts.incompleteCount && (
+            <div className="flex flex-col gap-2 px-3.5 py-3 rounded-[10px] bg-[#FEECEB] text-[#B42318]">
+              <div className="flex items-center justify-between gap-3 font-semibold"><span>لن تُعتمد لنقص البيانات — أكملها أولًا من «تعديل»</span><span className="text-lg font-bold">{dialog.counts.incompleteCount}</span></div>
+              <ul className="m-0 pr-4 text-[13px] max-h-48 overflow-y-auto flex flex-col gap-1">
+                {dialog.counts.incomplete.map((x) => <li key={x.id}><b>{x.name}</b>: ينقصه {x.missing.join(' و')}</li>)}
+                {dialog.counts.incompleteCount > dialog.counts.incomplete.length && <li>و{dialog.counts.incompleteCount - dialog.counts.incomplete.length} غيرها…</li>}
+              </ul>
+            </div>
+          )}
           {!!dialog.counts.needs && <Count bg="#FFF1E5" fg="#B54708" label="لن تُعتمد لأنها «يحتاج تعديل» — تُعدَّل أولًا" n={dialog.counts.needs} />}
           {!!dialog.counts.same && <Count bg="#F2F4F7" fg="#344054" label="بلا تغيير (صحيحة أو معدلة أو مقفلة)" n={dialog.counts.same} />}
           <div className="flex flex-wrap gap-2">
@@ -406,7 +416,7 @@ export default function ReviewBoard({ mode, user }) {
           </label>
           {dialog.error && <p role="alert" className="m-0 text-[#B42318] font-semibold">{dialog.error}</p>}
           <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={doReturn} className="inline-flex items-center gap-2 h-11 px-[18px] rounded-[10px] bg-[#B54708] text-white font-semibold"><Icon name="undo" />إعادة مع الملاحظة</button>
+            <button type="button" onClick={doReturn} className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-[13px] bg-[#B54708] text-white font-semibold"><Icon name="undo" />إعادة مع الملاحظة</button>
             <button type="button" className={btn.ghost} onClick={() => setDialog(null)}>إلغاء</button>
           </div>
         </Dialog>
@@ -445,7 +455,7 @@ function Tabs({ tabs, tab, setTab }) {
         const on = tab === t.key;
         return (
           <button key={t.key} type="button" onClick={() => setTab(t.key)} aria-pressed={on}
-            className={`inline-flex items-center gap-2 h-11 px-4 rounded-full border font-semibold ${on ? 'bg-[#1D4ED8] text-white border-[#1D4ED8]' : 'bg-white text-[#344054] border-[#D5DCE6]'}`}>
+            className={`inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full border text-sm font-semibold ${on ? 'bg-[#1D4ED8] text-white border-[#1D4ED8]' : 'bg-white text-[#344054] border-[#D5DCE6]'}`}>
             {t.label}
             <span className="min-w-[26px] px-2 rounded-full text-xs font-bold leading-[22px] text-center"
               style={on ? { background: '#FFFFFF', color: '#1D4ED8' } : { background: t.soft.bg, color: t.soft.fg }}>
@@ -524,7 +534,8 @@ function Table({ isTpa, grouped, data, sel, canSelect, allVisSel, noneSelectable
               const ids = f.members.filter(canSelect).map((m) => m.id);
               const pending = f.members.filter((m) => m.status === 'pending').length;
               const needs = f.members.filter((m) => m.status === 'needs_edit').length;
-              const summary = [pending && `بانتظار التحقق: ${pending}`, needs && `يحتاج تعديل: ${needs}`,
+              const incomplete = f.members.filter((m) => m.status === 'pending' && missingOf(m).length).length;
+              const summary = [pending && `بانتظار التحقق: ${pending}`, incomplete && `ناقص بيانات: ${incomplete}`, needs && `يحتاج تعديل: ${needs}`,
                 f.members.every((m) => LOCKED.has(m.status)) && 'مرحّلة للمطبعة'].filter(Boolean).join(' · ');
               return (
                 <div key={f.key}>
@@ -541,7 +552,7 @@ function Table({ isTpa, grouped, data, sel, canSelect, allVisSel, noneSelectable
                     <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-2 px-4 py-2">
                       <span className="text-[13px] text-[#5B6475]">{summary}</span>
                       {!isTpa && pending > 0 && (
-                        <button type="button" onClick={() => onApproveFamily(f)} className="inline-flex items-center gap-1.5 h-11 px-3.5 rounded-[10px] border border-[#A9C2F2] bg-white hover:bg-[#F2F4F7] text-[#1D4ED8] font-semibold">
+                        <button type="button" onClick={() => onApproveFamily(f)} className="inline-flex items-center gap-1 h-8 px-2.5 rounded-lg text-[13px] border border-[#A9C2F2] bg-white hover:bg-[#F2F4F7] text-[#1D4ED8] font-semibold">
                           <Icon name="check" size={16} strokeWidth={2.4} />اعتماد العائلة
                         </button>
                       )}
@@ -591,6 +602,9 @@ function Row({ m, cols, flat, isTpa, selected, selectable, onToggle, onApprove, 
       <div className="px-3 py-2.5 flex flex-col items-start gap-1">
         <StatusBadge status={m.status} />
         {m.batch && <span className="text-xs text-[#5B6475]">دفعة الطباعة {m.batch}</span>}
+        {!isTpa && m.status === 'pending' && missingOf(m).length > 0 && (
+          <span className="text-xs font-semibold text-[#B42318]">ناقص: {missingOf(m).join('، ')}</span>
+        )}
         {isTpa && (m.status === 'correct' || m.status === 'modified') && !isReady(m) && (
           <span className="text-xs font-semibold text-[#B54708]">غير جاهز: {!m.photoUrl ? 'بلا صورة' : 'المواليد ناقصة'}</span>
         )}
@@ -613,10 +627,11 @@ function RowActions({ m, isTpa, onApprove, onEdit, onReturn }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
       {m.status === 'pending' && (
-        <button type="button" onClick={() => onApprove(m)} className={btn.approve}><Icon name="check" size={16} strokeWidth={2.4} />صحيح</button>
+        <button type="button" onClick={() => onApprove(m)} className={`${btn.approve} disabled:opacity-40 disabled:cursor-not-allowed`}
+          disabled={missingOf(m).length > 0} title={missingOf(m).length ? `لا يمكن الاعتماد: ينقصه ${missingOf(m).join(' و')}` : undefined}><Icon name="check" size={16} strokeWidth={2.4} />صحيح</button>
       )}
       <button type="button" onClick={() => onEdit(m)}
-        className={`inline-flex items-center gap-1.5 h-11 px-3 rounded-[10px] border bg-white hover:bg-[#F2F4F7] font-semibold ${m.status === 'needs_edit' ? 'border-[#F0B27A] text-[#B54708]' : 'border-[#D5DCE6] text-[#344054]'}`}>
+        className={`inline-flex items-center gap-1 h-8 px-2.5 rounded-lg text-[13px] border bg-white hover:bg-[#F2F4F7] font-semibold ${m.status === 'needs_edit' ? 'border-[#F0B27A] text-[#B54708]' : 'border-[#D5DCE6] text-[#344054]'}`}>
         <Icon name="pencil" size={16} />تعديل
       </button>
     </div>

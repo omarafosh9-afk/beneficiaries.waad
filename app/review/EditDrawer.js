@@ -70,24 +70,24 @@ export default function EditDrawer({ m, onClose, onSaved }) {
           </div>
           <label className="flex flex-col gap-1.5 font-semibold text-[#344054]">
             اسم المستفيد
-            <input value={form.name} onChange={set('name')} maxLength={120} required className="h-11 px-3 border border-[#D5DCE6] rounded-[10px] font-normal" />
+            <input value={form.name} onChange={set('name')} maxLength={120} required className="h-10 px-3 border border-[#D5DCE6] rounded-[10px] font-normal" />
           </label>
           <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(150px, 100%), 1fr))' }}>
             <label className="flex flex-col gap-1.5 font-semibold text-[#344054]">
               صلة القرابة
-              <select value={form.relation} onChange={set('relation')} className="h-11 px-3 border border-[#D5DCE6] rounded-[10px] bg-white font-normal">
+              <select value={form.relation} onChange={set('relation')} className="h-10 px-3 border border-[#D5DCE6] rounded-[10px] bg-white font-normal">
                 {RELATIONS.map((r) => <option key={r} value={r}>{relLabel(r)}</option>)}
                 {!RELATIONS.includes(m.relation) && <option value={m.relation}>{m.relation || '—'}</option>}
               </select>
             </label>
             <label className="flex flex-col gap-1.5 font-semibold text-[#344054]">
               المواليد
-              <input value={form.dob} onChange={set('dob')} dir="ltr" placeholder="مثال: 2014/11/05" className="h-11 px-3 border border-[#D5DCE6] rounded-[10px] font-normal text-right" />
+              <input value={form.dob} onChange={set('dob')} dir="ltr" placeholder="مثال: 2014/11/05" className="h-10 px-3 border border-[#D5DCE6] rounded-[10px] font-normal text-right" />
             </label>
           </div>
           <div className="flex flex-col gap-1.5">
             <span className="font-semibold text-[#344054]">رقم البطاقة</span>
-            <div className="flex flex-wrap items-center justify-between gap-2 min-h-11 px-3 border border-dashed border-[#D5DCE6] rounded-[10px] bg-[#F8FAFC] text-[#5B6475]">
+            <div className="flex flex-wrap items-center justify-between gap-2 min-h-10 px-3 border border-dashed border-[#D5DCE6] rounded-[10px] bg-[#F8FAFC] text-[#5B6475]">
               <span dir="ltr" className="font-mono text-[#344054]">{m.card}</span>
               <span className="inline-flex items-center gap-1.5 text-xs"><Icon name="lock" size={14} />تحدده شركة TPA ولا يُعدَّل هنا</span>
             </div>

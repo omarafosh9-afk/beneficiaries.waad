@@ -18,7 +18,7 @@ export default function AppHeader({ user, title, subtitle, active }) {
       <div className="flex flex-wrap items-center gap-2.5">
         {links.map(([href, label]) => (
           <Link key={href} href={href} aria-current={active === href ? 'page' : undefined}
-            className={`inline-flex items-center h-11 px-3.5 rounded-xl border font-semibold ${active === href ? 'bg-[#1D4ED8] border-[#1D4ED8] text-white' : 'bg-white border-[#E3E8EF] text-[#344054] hover:bg-[#F2F4F7]'}`}>
+            className={`inline-flex items-center h-9 px-3 rounded-lg border text-[13px] font-semibold ${active === href ? 'bg-[#1D4ED8] border-[#1D4ED8] text-white' : 'bg-white border-[#E3E8EF] text-[#344054] hover:bg-[#F2F4F7]'}`}>
             {label}
           </Link>
         ))}
@@ -29,7 +29,7 @@ export default function AppHeader({ user, title, subtitle, active }) {
             <span className="text-xs text-[#5B6475]">{ROLE_LABELS[user.role]}{user.entityName ? ` · ${user.entityName}` : ''}</span>
           </span>
           <form action={logout}>
-            <button type="submit" className="h-11 px-3 rounded-[10px] text-[13px] font-semibold text-[#B42318] hover:bg-[#FEECEB]">خروج</button>
+            <button type="submit" className="h-8 px-2.5 rounded-lg text-[13px] font-semibold text-[#B42318] hover:bg-[#FEECEB]">خروج</button>
           </form>
         </div>
       </div>

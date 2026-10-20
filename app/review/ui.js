@@ -22,6 +22,13 @@ export function dobText(d) {
   return /^\d{4}-\d{2}-\d{2}$/.test(d) ? d.replace(/-/g, '/') : d;
 }
 
+export function missingOf(m) {
+  const out = [];
+  if (!m.photoUrl) out.push('الصورة');
+  if (!m.dob) out.push('المواليد');
+  return out;
+}
+
 export function isReady(m) {
   return (m.status === 'correct' || m.status === 'modified') && !!m.photoUrl && !!m.dob;
 }
@@ -147,7 +154,7 @@ export function Icon({ name, size = 18, className = '', strokeWidth = 2 }) {
 export function StatusBadge({ status, small }) {
   const s = STATUS[status] || STATUS.pending;
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full font-bold whitespace-nowrap ${small ? 'h-7 px-2.5 text-xs' : 'h-[30px] px-3 text-[13px]'}`}
+    <span className={`inline-flex items-center gap-1.5 rounded-full font-bold whitespace-nowrap ${small ? 'h-7 px-2.5 text-xs' : 'h-7 px-2.5 text-xs'}`}
       style={{ background: s.bg, color: s.fg }}>
       <Icon name={s.icon} size={15} strokeWidth={s.icon === 'check' ? 2.4 : 2} />
       {s.label}
@@ -199,8 +206,8 @@ export function Dialog({ title, onClose, children, wide }) {
 }
 
 export const btn = {
-  primary: 'inline-flex items-center gap-2 h-11 px-[18px] rounded-[10px] bg-[#1D4ED8] hover:bg-[#1E40AF] text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed',
-  ghost: 'inline-flex items-center gap-2 h-11 px-3.5 rounded-[10px] border border-[#D5DCE6] bg-white hover:bg-[#F2F4F7] text-[#344054] font-semibold disabled:opacity-50',
-  approve: 'inline-flex items-center gap-1.5 h-11 px-3 rounded-[10px] border border-[#A8D5B6] bg-white hover:bg-[#F2F4F7] text-[#126B33] font-semibold',
-  warn: 'inline-flex items-center gap-1.5 h-11 px-3 rounded-[10px] border border-[#F0B27A] bg-white hover:bg-[#F2F4F7] text-[#B54708] font-semibold whitespace-nowrap',
+  primary: 'inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-[13px] bg-[#1D4ED8] hover:bg-[#1E40AF] text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed',
+  ghost: 'inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-[13px] border border-[#D5DCE6] bg-white hover:bg-[#F2F4F7] text-[#344054] font-semibold disabled:opacity-50',
+  approve: 'inline-flex items-center gap-1 h-8 px-2.5 rounded-lg text-[13px] border border-[#A8D5B6] bg-white hover:bg-[#F2F4F7] text-[#126B33] font-semibold',
+  warn: 'inline-flex items-center gap-1 h-8 px-2.5 rounded-lg text-[13px] border border-[#F0B27A] bg-white hover:bg-[#F2F4F7] text-[#B54708] font-semibold whitespace-nowrap',
 };
