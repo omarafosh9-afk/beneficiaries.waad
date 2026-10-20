@@ -5,9 +5,10 @@ import { ROLE_LABELS } from '../../lib/auth.js';
 
 export default function AppHeader({ user, title, subtitle, active }) {
   const links = user.role === 'tpa'
-    ? [['/tpa', 'المراجعة والترحيل'], ['/review', 'شاشة جهة العمل'], ['/', 'البحث والصور']]
+    ? [['/tpa', 'المراجعة والترحيل'], ['/', 'البحث والصور'], ['/users', 'المستخدمون']]
     : [];
-  const initials = user.displayName.split(/\s+/).map((w) => w[0]).join('').slice(0, 2);
+  // أول حرف من الاسم الظاهر فقط (الجمع بين حرف عربي وآخر لاتيني كان يظهر مقلوبًا).
+  const initials = Array.from(user.displayName.replace(/[^\p{L}\s]/gu, '').trim())[0] || '؟';
   return (
     <header className="flex flex-wrap items-center justify-between gap-4">
       <div className="flex flex-col gap-0.5">

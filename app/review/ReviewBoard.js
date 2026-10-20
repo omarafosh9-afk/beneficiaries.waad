@@ -26,7 +26,7 @@ const READY_TAB = { label: 'جاهز للترحيل', bg: '#E7F6EC', fg: '#126B3
 export default function ReviewBoard({ mode, user }) {
   const isTpa = mode === 'tpa';
   const fixedEntity = user.role === 'entity' ? user.entityId : null;
-  const [entity, setEntity] = useState(fixedEntity || (isTpa ? '' : 2));
+  const [entity, setEntity] = useState(fixedEntity || 2);
   const [tab, setTab] = useState('all');
   const [qInput, setQInput] = useState('');
   const [q, setQ] = useState('');
@@ -49,7 +49,7 @@ export default function ReviewBoard({ mode, user }) {
 
   // تذكّر الجهة المختارة (لحساب TPA في شاشة الجهة).
   useEffect(() => {
-    if (fixedEntity || isTpa) return;
+    if (fixedEntity) return;
     try {
       const v = Number(localStorage.getItem('review.entity'));
       if ([1, 2, 3].includes(v)) setEntity(v);
@@ -236,8 +236,10 @@ export default function ReviewBoard({ mode, user }) {
           </Field>
           {isTpa && (
             <Field label="جهة العمل" width="w-40">
-              <select value={entity} onChange={(e) => setEntity(e.target.value ? Number(e.target.value) : '')} className="h-11 px-3 border border-[#D5DCE6] rounded-[10px] bg-white">
-                <option value="">الكل</option>
+              <select value={entity} onChange={(e) => {
+                setEntity(Number(e.target.value));
+                try { localStorage.setItem('review.entity', e.target.value); } catch {}
+              }} className="h-11 px-3 border border-[#D5DCE6] rounded-[10px] bg-white">
                 {ENTITIES.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
               </select>
             </Field>

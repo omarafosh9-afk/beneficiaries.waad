@@ -95,3 +95,21 @@ test('legacy adapter round-trips without spurious changes', () => {
   assert.equal(B.getBeneficiary(5).name, 'يوسف حسين علي المسماري');
   assert.equal(B.getBeneficiary(6).family_key, '999');
 });
+
+test('user management: create, reset password, deactivate', async () => {
+  const U = await import('../lib/users.js');
+  const { checkPassword } = await import('../lib/session.js');
+  assert.throws(() => U.createUser({ username: 'ab', displayName: 'x', role: 'tpa' }), /اسم المستخدم/);
+  assert.throws(() => U.createUser({ username: 'jal1', displayName: 'x', role: 'entity' }), /الجهة/);
+  const c = U.createUser({ username: 'jal1', displayName: 'مراجع', role: 'entity', entityId: 2 });
+  assert.throws(() => U.createUser({ username: 'jal1', displayName: 'x', role: 'tpa' }), /من قبل/);
+  const u = U.listUsers().find((x) => x.username === 'jal1');
+  assert.equal(u.entity, 'جليانة');
+  const hash = () => getDb().prepare('SELECT password_hash h FROM users WHERE id = ?').get(u.id).h;
+  assert.ok(checkPassword(c.password, hash()));
+  const r = U.resetPassword(u.id);
+  assert.ok(!checkPassword(c.password, hash()) && checkPassword(r.password, hash()));
+  assert.throws(() => U.setActive(u.id, false, u.id), /حسابك/);
+  U.setActive(u.id, false, 999);
+  assert.equal(U.listUsers().find((x) => x.id === u.id).active, 0);
+});
