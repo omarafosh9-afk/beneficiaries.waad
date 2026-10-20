@@ -218,7 +218,6 @@ export default function ReviewBoard({ mode, user }) {
 
       {isTpa && (
         <>
-          <Batches batches={data?.printBatches || []} />
           <section className="bg-white border border-[#E3E8EF] rounded-2xl px-5 py-3.5">
             <Tabs tabs={tabs} tab={tab} setTab={setTab} />
           </section>
@@ -412,7 +411,7 @@ export default function ReviewBoard({ mode, user }) {
           <label className="flex flex-col gap-1.5 font-semibold text-[#344054]">
             <span>ما الذي يجب تعديله؟ <span className="text-[#B42318]">*</span></span>
             <textarea rows={3} value={dialog.note} maxLength={300} onChange={(e) => setDialog({ ...dialog, note: e.target.value, error: '' })}
-              placeholder="مثال: الصورة غير واضحة، يرجى رفع صورة حديثة" className="px-3 py-2.5 border border-[#D5DCE6] rounded-[10px] font-normal" />
+              placeholder="مثال: الصورة غير واضحة، يرجى رفع صورة حديثة" className="px-3 py-1.5 border border-[#D5DCE6] rounded-[10px] font-normal" />
           </label>
           {dialog.error && <p role="alert" className="m-0 text-[#B42318] font-semibold">{dialog.error}</p>}
           <div className="flex flex-wrap gap-2">
@@ -539,7 +538,7 @@ function Table({ isTpa, grouped, data, sel, canSelect, allVisSel, noneSelectable
                 f.members.every((m) => LOCKED.has(m.status)) && 'مرحّلة للمطبعة'].filter(Boolean).join(' · ');
               return (
                 <div key={f.key}>
-                  <div className="grid items-center min-h-[60px] bg-[#F8FAFC] border-b border-[#E3E8EF]" style={{ gridTemplateColumns: '56px minmax(0,1fr) auto' }}>
+                  <div className="grid items-center min-h-[48px] bg-[#F8FAFC] border-b border-[#E3E8EF]" style={{ gridTemplateColumns: '56px minmax(0,1fr) auto' }}>
                     <div className="flex justify-center">
                       <Checkbox checked={ids.length > 0 && ids.every((id) => sel.has(id))} disabled={!ids.length} onChange={() => onToggleFamily(f)} label={`تحديد عائلة ${f.employeeName}`} />
                     </div>
@@ -571,13 +570,13 @@ function Table({ isTpa, grouped, data, sel, canSelect, allVisSel, noneSelectable
 function Row({ m, cols, flat, isTpa, selected, selectable, onToggle, onApprove, onEdit, onReturn }) {
   const changed = (k) => m.prev[k] !== undefined;
   return (
-    <div className={`grid items-center min-h-[76px] border-b border-[#EEF1F5] ${selected ? 'bg-[#F5F8FF]' : 'bg-white'}`} style={{ gridTemplateColumns: cols }}>
+    <div className={`grid items-center min-h-[60px] border-b border-[#EEF1F5] ${selected ? 'bg-[#F5F8FF]' : 'bg-white'}`} style={{ gridTemplateColumns: cols }}>
       <div className="flex justify-center"><Checkbox checked={selected} disabled={!selectable} onChange={onToggle} label={`تحديد ${m.name}`} /></div>
-      <div className="px-3 py-2"><Photo m={m} /></div>
+      <div className="px-3 py-1.5"><Photo m={m} /></div>
       {flat && isTpa && <div className="px-3"><span className="inline-flex h-[26px] items-center px-2.5 rounded-lg bg-[#F2F4F7] text-xs font-semibold whitespace-nowrap">{m.entity}</span></div>}
       {flat && <div className="px-3"><span dir="ltr" className="font-mono text-[13px] text-[#344054]">{m.jobNo || '—'}</span></div>}
       {flat && <div className="px-3 text-[#344054]">{m.employeeName || '—'}</div>}
-      <div className="px-3 py-2.5 min-w-0 flex flex-col gap-1">
+      <div className="px-3 py-1.5 min-w-0 flex flex-col gap-1">
         <span className={`font-semibold ${changed('name') ? 'text-[#1D4ED8]' : ''}`}>{m.name}</span>
         {changed('name') && <Prev value={m.prev.name} />}
         {m.status === 'needs_edit' && m.note && (
@@ -585,11 +584,11 @@ function Row({ m, cols, flat, isTpa, selected, selectable, onToggle, onApprove, 
         )}
         {m.status === 'modified' && m.reason && <span className="text-xs text-[#1D4ED8]">سبب التعديل: {m.reason}</span>}
       </div>
-      <div className="px-3 py-2.5 flex flex-col gap-0.5">
+      <div className="px-3 py-1.5 flex flex-col gap-0.5">
         <span className={changed('relation') ? 'text-[#1D4ED8]' : 'text-[#344054]'}>{relLabel(m.relation)}</span>
         {changed('relation') && <Prev value={relLabel(m.prev.relation)} />}
       </div>
-      <div className="px-3 py-2.5 flex flex-col items-start gap-0.5">
+      <div className="px-3 py-1.5 flex flex-col items-start gap-0.5">
         {m.dob ? (
           <span dir="ltr" className={`tabular-nums ${changed('dob') ? 'text-[#1D4ED8]' : 'text-[#344054]'}`}>{dobText(m.dob)}</span>
         ) : (
@@ -598,8 +597,8 @@ function Row({ m, cols, flat, isTpa, selected, selectable, onToggle, onApprove, 
         {/^\d{4}$/.test(m.dob) && <span className="text-xs text-[#5B6475]">سنة فقط</span>}
         {changed('dob') && <Prev value={dobText(m.prev.dob)} ltr />}
       </div>
-      <div className="px-3 py-2.5"><span dir="ltr" className="font-mono text-[13px] text-[#344054]">{m.card}</span></div>
-      <div className="px-3 py-2.5 flex flex-col items-start gap-1">
+      <div className="px-3 py-1.5"><span dir="ltr" className="font-mono text-[13px] text-[#344054]">{m.card}</span></div>
+      <div className="px-3 py-1.5 flex flex-col items-start gap-1">
         <StatusBadge status={m.status} />
         {m.batch && <span className="text-xs text-[#5B6475]">دفعة الطباعة {m.batch}</span>}
         {!isTpa && m.status === 'pending' && missingOf(m).length > 0 && (
@@ -609,7 +608,7 @@ function Row({ m, cols, flat, isTpa, selected, selectable, onToggle, onApprove, 
           <span className="text-xs font-semibold text-[#B54708]">غير جاهز: {!m.photoUrl ? 'بلا صورة' : 'المواليد ناقصة'}</span>
         )}
       </div>
-      <div className="px-3 py-2.5"><RowActions m={m} isTpa={isTpa} onApprove={onApprove} onEdit={onEdit} onReturn={onReturn} /></div>
+      <div className="px-3 py-1.5"><RowActions m={m} isTpa={isTpa} onApprove={onApprove} onEdit={onEdit} onReturn={onReturn} /></div>
     </div>
   );
 }
