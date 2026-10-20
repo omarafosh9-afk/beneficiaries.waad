@@ -123,3 +123,13 @@ test('specific completeness filters', () => {
   assert.deepEqual(ids('no_dob'), [3]);
   assert.deepEqual(ids('no_employee'), []);
 });
+
+test('sorting by name, job and direction', () => {
+  const names = (o) => B.listBeneficiaries({ entityId: 2, grouped: false, ...o }).rows.map((r) => r.id);
+  assert.deepEqual(names({ sort: 'job' }).slice(-1), [4]);
+  assert.deepEqual(names({ sort: 'job', dir: 'desc' })[0], 4);
+  const byName = B.listBeneficiaries({ entityId: 2, grouped: false, sort: 'name' }).rows.map((r) => r.name);
+  assert.ok(byName[0].startsWith('خالد'), byName.join(',')); // خ قبل س ف م
+  const fam = B.listBeneficiaries({ entityId: 2, grouped: true, sort: 'employee', dir: 'desc' }).families.map((f) => f.familyKey);
+  assert.deepEqual(fam, ['33410', '33587']); // سالم بعد خالد، والترتيب تنازلي
+});

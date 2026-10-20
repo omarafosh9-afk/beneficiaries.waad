@@ -37,6 +37,7 @@ export default function ReviewBoard({ mode, user }) {
   const [grouped, setGrouped] = useState(!isTpa);
   const [view, setView] = useState('table');
   const [page, setPage] = useState(1);
+  const [sort, setSort] = useState({ key: 'job', dir: 'asc' });
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -66,8 +67,8 @@ export default function ReviewBoard({ mode, user }) {
   }, [qInput]);
 
   const filter = useMemo(
-    () => ({ entityId: entity || null, tab, q, relation, completeness, intake, grouped }),
-    [entity, tab, q, relation, completeness, intake, grouped]
+    () => ({ entityId: entity || null, tab, q, relation, completeness, intake, grouped, sort: sort.key, dir: sort.dir }),
+    [entity, tab, q, relation, completeness, intake, grouped, sort]
   );
 
   // أي تغيير في الفلاتر يعيد للصفحة الأولى ويلغي التحديد.
@@ -86,8 +87,10 @@ export default function ReviewBoard({ mode, user }) {
     if (completeness) p.set('completeness', completeness);
     if (intake) p.set('intake', intake);
     p.set('grouped', grouped ? '1' : '0');
+    p.set('sort', sort.key);
+    p.set('dir', sort.dir);
     return p;
-  }, [filter, tab, q, relation, completeness, intake, grouped]);
+  }, [filter, tab, q, relation, completeness, intake, grouped, sort]);
 
   useEffect(() => {
     let alive = true;
@@ -334,6 +337,7 @@ export default function ReviewBoard({ mode, user }) {
 
         {!!rows.length && view === 'table' && (
           <Table
+            sort={sort} onSort={(key) => setSort((s) => ({ key, dir: s.key === key && s.dir === 'asc' ? 'desc' : 'asc' }))}
             isTpa={isTpa} grouped={!!data.families} data={data} sel={sel} canSelect={canSelect}
             allVisSel={allVisSel} noneSelectable={!selectable.length}
             onToggleAll={() => toggleMany(rows)} onToggle={(m) => toggle([m.id], !sel.has(m.id))}
@@ -520,7 +524,9 @@ const COLS = {
   tpaFlat: '56px 64px 92px 96px minmax(160px,1.3fr) minmax(180px,1.5fr) 88px 116px minmax(150px,1fr) minmax(170px,1fr) 170px',
 };
 
-function Table({ isTpa, grouped, data, sel, canSelect, allVisSel, noneSelectable, onToggleAll, onToggle, onToggleFamily, onApproveFamily, onApprove, onEdit, onReturn }) {
+const SORTABLE = { 'الرقم الوظيفي': 'job', 'اسم الموظف': 'employee', 'اسم المستفيد': 'name' };
+
+function Table({ sort, onSort, isTpa, grouped, data, sel, canSelect, allVisSel, noneSelectable, onToggleAll, onToggle, onToggleFamily, onApproveFamily, onApprove, onEdit, onReturn }) {
   const cols = COLS[(isTpa ? 'tpa' : 'entity') + (grouped ? 'Grouped' : 'Flat')];
   const minW = grouped ? 1080 : isTpa ? 1300 : 1300;
   const head = grouped
@@ -537,7 +543,21 @@ function Table({ isTpa, grouped, data, sel, canSelect, allVisSel, noneSelectable
           <div className="flex justify-center">
             <Checkbox checked={allVisSel} disabled={noneSelectable} onChange={onToggleAll} label="تحديد كل السجلات الظاهرة" />
           </div>
-          {head.map((h) => <div key={h} className="px-3">{h}</div>)}
+          {head.map((h) => {
+            // في العرض المجمّع يرتّب «اسم المستفيد» العائلات حسب اسم الموظف.
+            const key = SORTABLE[h];
+            if (!key) return <div key={h} className="px-3">{h}</div>;
+            const on = sort.key === key || (grouped && key === 'name' && sort.key === 'employee');
+            return (
+              <div key={h} className="px-1.5" aria-sort={on ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'}>
+                <button type="button" onClick={() => onSort(key)} title="فرز حسب هذا العمود"
+                  className={`inline-flex items-center gap-1 h-8 px-1.5 rounded-md hover:bg-[#EEF1F5] font-semibold ${on ? 'text-[#1D4ED8]' : ''}`}>
+                  {h}
+                  <span aria-hidden="true" className="text-[10px]">{on ? (sort.dir === 'asc' ? '▲' : '▼') : '↕'}</span>
+                </button>
+              </div>
+            );
+          })}
         </div>
         {grouped
           ? data.families.map((f) => {
