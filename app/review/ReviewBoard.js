@@ -194,9 +194,9 @@ export default function ReviewBoard({ mode, user }) {
   const exportHref = `/api/review/export?${query}`;
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-3">
       {!isTpa && (
-        <section className="bg-white border border-[#E3E8EF] rounded-2xl px-5 py-[18px] flex flex-col gap-4">
+        <section className="bg-white border border-[#E3E8EF] rounded-2xl px-4 py-3 flex flex-col gap-3">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2.5">
             {!fixedEntity && (
               <label className="flex items-center gap-2 font-semibold">
@@ -222,7 +222,7 @@ export default function ReviewBoard({ mode, user }) {
 
       {isTpa && (
         <>
-          <section className="bg-white border border-[#E3E8EF] rounded-2xl px-5 py-3.5">
+          <section className="bg-white border border-[#E3E8EF] rounded-2xl px-4 py-2.5">
             <div className="overflow-x-auto">
               <Tabs tabs={tabs} tab={tab} setTab={setTab} nowrap />
             </div>
@@ -237,7 +237,7 @@ export default function ReviewBoard({ mode, user }) {
       )}
 
       <section className="bg-white border border-[#E3E8EF] rounded-2xl overflow-hidden">
-        <div className="flex flex-wrap items-end gap-3 px-5 py-4 border-b border-[#EEF1F5]">
+        <div className="flex flex-wrap items-end gap-3 px-4 py-3 border-b border-[#EEF1F5]">
           <Field label="بحث" grow>
             <div className="relative">
               <Icon name="search" className="absolute top-[13px] right-3 text-[#5B6475]" />
