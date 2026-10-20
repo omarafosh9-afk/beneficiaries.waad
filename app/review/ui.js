@@ -163,7 +163,7 @@ export function StatusBadge({ status, small }) {
 }
 
 export function Photo({ m, size = 'sm' }) {
-  const box = size === 'lg' ? 'w-24 h-[116px] rounded-xl' : size === 'md' ? 'w-[72px] h-[88px] rounded-[10px]' : 'w-10 h-12 rounded-md';
+  const box = size === 'lg' ? 'w-24 h-[116px] rounded-xl' : size === 'md' ? 'w-[72px] h-[88px] rounded-[10px]' : 'w-9 h-11 rounded-md';
   if (m.photoUrl) {
     // eslint-disable-next-line @next/next/no-img-element
     return <img src={m.photoUrl} alt={`صورة ${m.name}`} className={`${box} object-cover bg-[#EEF1F5]`} loading="lazy" />;
