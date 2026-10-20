@@ -3,6 +3,7 @@
 //  - mode="entity": شاشة جهة العمل (اعتماد وتعديل، مجمّعة حسب العائلة).
 //  - mode="tpa": شاشة الشركة (كل الجهات، إعادة للتعديل، ترحيل الجاهز للمطبعة).
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   STATUS, LOCKED, missingOf, Icon, StatusBadge, Photo, Checkbox, Prev, Dialog, btn, relLabel, dobText, isReady,
   records, membersLabel, cardsLabel,
@@ -46,6 +47,9 @@ export default function ReviewBoard({ mode, user }) {
   const [toast, setToast] = useState('');
   const toastTimer = useRef(null);
   const [reloadKey, setReloadKey] = useState(0);
+  // زر الترحيل يُعرض في رأس الصفحة بجانب أزرار التنقل.
+  const [headerSlot, setHeaderSlot] = useState(null);
+  useEffect(() => setHeaderSlot(document.getElementById('header-actions')), []);
 
   // تذكّر الجهة المختارة (لحساب TPA في شاشة الجهة).
   useEffect(() => {
@@ -219,14 +223,15 @@ export default function ReviewBoard({ mode, user }) {
       {isTpa && (
         <>
           <section className="bg-white border border-[#E3E8EF] rounded-2xl px-5 py-3.5">
-            <div className="flex items-center gap-3">
-              <div className="flex-1 min-w-0 overflow-x-auto">
-                <Tabs tabs={tabs} tab={tab} setTab={setTab} nowrap />
-              </div>
+            <div className="overflow-x-auto">
+              <Tabs tabs={tabs} tab={tab} setTab={setTab} nowrap />
+            </div>
+            {headerSlot && createPortal(
               <button type="button" className={`${btn.primary} shrink-0 whitespace-nowrap`} disabled={!allMatching && !sel.size} onClick={openForward}>
                 <Icon name="send" />ترحيل المحدد للمطبعة {selCount === null ? '(كل المطابق)' : `(${selCount})`}
-              </button>
-            </div>
+              </button>,
+              headerSlot
+            )}
           </section>
         </>
       )}

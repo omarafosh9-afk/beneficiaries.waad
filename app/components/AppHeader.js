@@ -16,6 +16,7 @@ export default function AppHeader({ user, title, subtitle, active }) {
         {subtitle && <p className="m-0 text-[#5B6475]">{subtitle}</p>}
       </div>
       <div className="flex flex-wrap items-center gap-2.5">
+        <div id="header-actions" className="contents" />
         {links.map(([href, label]) => (
           <Link key={href} href={href} aria-current={active === href ? 'page' : undefined}
             className={`inline-flex items-center h-9 px-3 rounded-lg border text-[13px] font-semibold ${active === href ? 'bg-[#1D4ED8] border-[#1D4ED8] text-white' : 'bg-white border-[#E3E8EF] text-[#344054] hover:bg-[#F2F4F7]'}`}>
