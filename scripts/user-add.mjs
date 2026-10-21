@@ -1,7 +1,7 @@
 // إضافة مستخدم أو تحديث كلمة مروره.
 // npm run user:add -- --username tpa --name "إدارة TPA" --role tpa --password "..."
 // npm run user:add -- --username jalyana --name "مراجع جليانة" --role entity --entity Jalyana --password "..."
-import { openDb, nowIso } from '../lib/db.js';
+import { openDb, nowIso } from '../lib/db-node.js';
 import { hashPassword } from '../lib/session.js';
 import { ENTITY_IDS } from '../lib/derive.js';
 

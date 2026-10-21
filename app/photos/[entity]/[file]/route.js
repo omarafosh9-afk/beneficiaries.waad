@@ -1,10 +1,14 @@
-// يقدّم صور المستفيدين من STORAGE_DIR بعد التحقق من الصلاحية:
-// مستخدم الجهة يرى صور جهته فقط، وإدارة TPA ترى الكل.
-import fs from 'node:fs';
-import path from 'node:path';
-import { STORAGE_DIR } from '../../../../lib/db.js';
+// يقدّم صور المستفيدين بعد التحقق من الصلاحية: مستخدم الجهة يرى صور جهته فقط، وإدارة TPA ترى الكل.
+// المصدر: مجلد STORAGE_DIR محليًا، أو KV على Cloudflare.
 import { ENTITY_IDS } from '../../../../lib/derive.js';
 import { currentUser } from '../../../../lib/auth.js';
+import { readPhoto } from '../../../../lib/photos.js';
+
+function contentType(b) {
+  if (b[0] === 0xff && b[1] === 0xd8) return 'image/jpeg';
+  if (b[0] === 0x89 && b[1] === 0x50) return 'image/png';
+  return 'image/webp';
+}
 
 export async function GET(request, { params }) {
   const { entity, file } = await params;
@@ -12,13 +16,9 @@ export async function GET(request, { params }) {
   if (!user) return new Response('Unauthorized', { status: 401 });
   const entityId = ENTITY_IDS[entity];
   const name = decodeURIComponent(file);
-  if (!entityId || name.includes('/') || name.includes('\\') || name.includes('..') || !/\.webp$/i.test(name)) {
-    return new Response('Not found', { status: 404 });
-  }
+  if (!entityId || !/\.webp$/i.test(name)) return new Response('Not found', { status: 404 });
   if (user.role === 'entity' && user.entityId !== entityId) return new Response('Forbidden', { status: 403 });
-  const full = path.join(STORAGE_DIR, entity, name);
-  if (!fs.existsSync(full)) return new Response('Not found', { status: 404 });
-  return new Response(fs.readFileSync(full), {
-    headers: { 'Content-Type': 'image/webp', 'Cache-Control': 'private, max-age=300' },
-  });
+  const bytes = await readPhoto(entity, name);
+  if (!bytes) return new Response('Not found', { status: 404 });
+  return new Response(bytes, { headers: { 'Content-Type': contentType(bytes), 'Cache-Control': 'private, max-age=300' } });
 }

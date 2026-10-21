@@ -1,7 +1,7 @@
 // نسخة احتياطية متسقة من القاعدة: data/backups/app-YYYYMMDD-HHmm.db
 import fs from 'node:fs';
 import path from 'node:path';
-import { openDb, DATA_DIR } from '../lib/db.js';
+import { openDb, DATA_DIR } from '../lib/db-node.js';
 
 const d = new Date();
 const p = (n) => String(n).padStart(2, '0');

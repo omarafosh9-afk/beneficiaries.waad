@@ -1,6 +1,6 @@
 import * as XLSX from 'xlsx';
 import { loadLegacyPeople, saveLegacyPeople } from '../../../lib/beneficiaries.js';
-import { STORAGE_DIR } from '../../../lib/db.js';
+import { STORAGE_DIR } from '../../../lib/photos.js';
 import { requireUser } from '../../../lib/auth.js';
 import { NextResponse } from 'next/server';
 

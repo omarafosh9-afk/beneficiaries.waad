@@ -14,7 +14,7 @@ export default async function UsersPage() {
     <main className="min-h-screen bg-[#F4F6F9]">
       <div className="max-w-[1100px] mx-auto px-4 md:px-6 pt-4 pb-10 flex flex-col gap-3">
         <AppHeader user={user} active="/users" title="إدارة المستخدمين" subtitle="حسابات جهات العمل وحسابات شركة TPA" />
-        <UsersClient initialUsers={listUsers()} meId={user.id} />
+        <UsersClient initialUsers={await listUsers()} meId={user.id} />
       </div>
     </main>
   );

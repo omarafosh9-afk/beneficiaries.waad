@@ -12,7 +12,7 @@ for (const [code, ids] of [['Jalyana', [1, 2, 4]], ['Jamarek', [5]]]) {
   for (const i of ids) fs.writeFileSync(path.join(dir, 'storage', code, `p${i}.webp`), 'x');
 }
 
-const { getDb, tx, nowIso } = await import('../lib/db.js');
+const { getDb, nowIso } = await import('../lib/db.js');
 const { deriveRows } = await import('../lib/derive.js');
 const B = await import('../lib/beneficiaries.js');
 
@@ -23,18 +23,20 @@ const people = [
   { id: 4, company: 'Jalyana', name: 'خالد مفتاح العبيدي', relation: 'موظف أساسي', dob: '1976-07-30', card1: 'JFZ202533587' },
   { id: 5, company: 'Jamarek', name: 'يوسف حسين المسماري', relation: 'موظف أساسي', dob: '1983-05-02', card1: 'JMR202527315' },
 ];
-const db = getDb();
-tx(db, () => {
-  const at = nowIso();
-  for (const r of deriveRows(people)) {
-    db.prepare(`INSERT INTO beneficiaries (id, entity_id, family_key, job_no, employee_name, name, relation, dob, card1, photo_file, deleted, search_key, updated_at)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(r.id, r.entity_id, r.family_key, r.job_no, r.employee_name, r.name, r.relation, r.dob, r.card1,
-      r.id === 3 ? null : `p${r.id}.webp`, 0, r.search_key, at);
-  }
-});
+const db = await getDb();
+const at = nowIso();
+await db.batch(
+  deriveRows(people).map((r) => [
+    `INSERT INTO beneficiaries (id, entity_id, family_key, job_no, employee_name, name, relation, dob, card1, photo_file, deleted, search_key, updated_at)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    [r.id, r.entity_id, r.family_key, r.job_no, r.employee_name, r.name, r.relation, r.dob, r.card1,
+      r.id === 3 ? null : `p${r.id}.webp`, 0, r.search_key, at],
+  ])
+);
+const status = async (id) => (await B.getBeneficiary(id)).review_status;
 
-test('list grouped by family with counts', () => {
-  const res = B.listBeneficiaries({ entityId: 2, grouped: true });
+test('list grouped by family with counts', async () => {
+  const res = await B.listBeneficiaries({ entityId: 2, grouped: true });
   assert.equal(res.total, 2);
   assert.equal(res.families[0].jobNo, '33410');
   assert.equal(res.families[0].employeeName, 'سالم عبدالله الورفلي');
@@ -43,93 +45,90 @@ test('list grouped by family with counts', () => {
   assert.deepEqual(res.progress, { done: 0, total: 4 });
 });
 
-test('search uses Arabic normalization', () => {
-  const res = B.listBeneficiaries({ entityId: 2, q: 'فاطمه', grouped: false });
+test('search uses Arabic normalization', async () => {
+  const res = await B.listBeneficiaries({ entityId: 2, q: 'فاطمه', grouped: false });
   assert.deepEqual(res.rows.map((r) => r.id), [2]);
 });
 
-test('completeness filter', () => {
-  const res = B.listBeneficiaries({ entityId: 2, completeness: 'missing', grouped: false });
-  assert.deepEqual(res.rows.map((r) => r.id), [3]);
+test('completeness filters', async () => {
+  const ids = async (c) => (await B.listBeneficiaries({ entityId: 2, completeness: c, grouped: false })).rows.map((r) => r.id).sort();
+  assert.deepEqual(await ids('missing'), [3]);
+  assert.deepEqual(await ids('no_photo'), [3]);
+  assert.deepEqual(await ids('no_dob'), [3]);
+  assert.deepEqual(await ids('no_employee'), []);
 });
 
-test('approve only pending, scoped to entity', () => {
-  const r = B.approve({ ids: [1, 5] }, 'test', 2);
+test('sorting by name, job and direction', async () => {
+  const ids = async (o) => (await B.listBeneficiaries({ entityId: 2, grouped: false, ...o })).rows.map((r) => r.id);
+  assert.equal((await ids({ sort: 'job' })).at(-1), 4);
+  assert.equal((await ids({ sort: 'job', dir: 'desc' }))[0], 4);
+  const byName = (await B.listBeneficiaries({ entityId: 2, grouped: false, sort: 'name' })).rows.map((r) => r.name);
+  assert.ok(byName[0].startsWith('خالد'), byName.join(','));
+  const fam = (await B.listBeneficiaries({ entityId: 2, grouped: true, sort: 'employee', dir: 'desc' })).families.map((f) => f.familyKey);
+  assert.deepEqual(fam, ['33410', '33587']);
+});
+
+test('approve only pending, scoped to entity', async () => {
+  const r = await B.approve({ ids: [1, 5] }, 'test', 2);
   assert.equal(r.approved, 1);
-  assert.equal(B.getBeneficiary(5).review_status, 'pending');
-  assert.equal(B.getBeneficiary(1).review_status, 'correct');
+  assert.equal(await status(5), 'pending');
+  assert.equal(await status(1), 'correct');
 });
 
-test('edit requires reason and real change, records old value', () => {
-  const b = B.getBeneficiary(2);
-  assert.throws(() => B.editBeneficiary({ id: 2, version: b.version, name: b.name, relation: b.relation, dob: b.dob, reason: 'x' }, 't'), /لم يتغيّر/);
-  assert.throws(() => B.editBeneficiary({ id: 2, version: b.version, name: b.name, relation: b.relation, dob: '1986-08-22', reason: '' }, 't'), /سبب/);
-  const v = B.editBeneficiary({ id: 2, version: b.version, name: b.name, relation: b.relation, dob: '1986-08-22', reason: 'حسب الرقم الوطني' }, 't');
+test('edit requires reason and real change, records old value', async () => {
+  const b = await B.getBeneficiary(2);
+  const base = { id: 2, version: b.version, name: b.name, relation: b.relation };
+  await assert.rejects(B.editBeneficiary({ ...base, dob: b.dob, reason: 'x' }, 't'), /لم يتغيّر/);
+  await assert.rejects(B.editBeneficiary({ ...base, dob: '1986-08-22', reason: '' }, 't'), /سبب/);
+  const v = await B.editBeneficiary({ ...base, dob: '1986-08-22', reason: 'حسب الرقم الوطني' }, 't');
   assert.equal(v.status, 'modified');
-  const listed = B.listBeneficiaries({ entityId: 2, tab: 'modified', grouped: false }).rows[0];
+  const listed = (await B.listBeneficiaries({ entityId: 2, tab: 'modified', grouped: false })).rows[0];
   assert.equal(listed.prev.dob, '1985-08-22');
-  assert.throws(() => B.editBeneficiary({ id: 2, version: b.version, name: 'س', relation: b.relation, dob: '1986-08-22', reason: 'r' }, 't'), /حدّث الصفحة/);
+  await assert.rejects(B.editBeneficiary({ ...base, name: 'س', dob: '1986-08-22', reason: 'r' }, 't'), /حدّث الصفحة/);
 });
 
-test('needs_edit cannot be approved; forward only ready, per entity batch, then locked', () => {
-  B.returnForEdit(4, 'الصورة غير واضحة', 'tpa');
-  assert.equal(B.approve({ ids: [4] }, 't').approved, 0);
-  const ar = B.approve({ ids: [3, 5] }, 't');
+test('incomplete and needs_edit cannot be approved; forward only ready, per entity batch, then locked', async () => {
+  await B.returnForEdit(4, 'الصورة غير واضحة', 'tpa');
+  assert.equal((await B.approve({ ids: [4] }, 't')).approved, 0);
+  const ar = await B.approve({ ids: [3, 5] }, 't');
   assert.equal(ar.approved, 1);
   assert.deepEqual(ar.incomplete, [{ id: 3, name: 'مريم سالم الورفلي', missing: ['الصورة', 'المواليد'] }]);
-  assert.equal(B.previewApproval({ ids: [3] }).incompleteCount, 1);
-  const pv = B.previewForward({ ids: [1, 2, 3, 5] });
-  assert.equal(pv.ready, 3); // 3 has no photo/dob
-  const batches = B.forward({ ids: [1, 2, 3, 5] }, 'tpa');
+  assert.equal((await B.previewApproval({ ids: [3] })).incompleteCount, 1);
+  assert.equal(await status(3), 'pending');
+  const pv = await B.previewForward({ ids: [1, 2, 3, 5] });
+  assert.equal(pv.ready, 3);
+  const batches = await B.forward({ ids: [1, 2, 3, 5] }, 'tpa');
   assert.equal(batches.length, 2);
-  assert.equal(B.getBeneficiary(3).review_status, 'pending'); // ناقص: لا يُعتمد
-  assert.equal(B.getBeneficiary(1).review_status, 'forwarded');
-  const b1 = B.getBeneficiary(1);
-  assert.throws(() => B.editBeneficiary({ id: 1, version: b1.version, name: 'x y', relation: b1.relation, dob: b1.dob, reason: 'r' }, 't'), /مقفل/);
-  assert.equal(B.listBatches().length, 2);
+  assert.equal(await status(1), 'forwarded');
+  const b1 = await B.getBeneficiary(1);
+  await assert.rejects(B.editBeneficiary({ id: 1, version: b1.version, name: 'x y', relation: b1.relation, dob: b1.dob, reason: 'r' }, 't'), /مقفل/);
+  assert.equal((await B.listBatches()).length, 2);
 });
 
-test('legacy adapter round-trips without spurious changes', () => {
-  const legacy = B.loadLegacyPeople();
-  assert.equal(B.saveLegacyPeople(legacy), 0);
+test('legacy adapter round-trips without spurious changes', async () => {
+  const legacy = await B.loadLegacyPeople();
+  assert.equal(await B.saveLegacyPeople(legacy), 0);
   legacy.find((p) => p.id === 5).name = 'يوسف حسين علي المسماري';
   legacy.push({ id: 6, company: 'Cement', name: 'جديد', relation: 'موظف أساسي', card1: 'LCC202500999', photoSlug: 'none' });
-  assert.equal(B.saveLegacyPeople(legacy), 2);
-  assert.equal(B.getBeneficiary(5).name, 'يوسف حسين علي المسماري');
-  assert.equal(B.getBeneficiary(6).family_key, '999');
+  assert.equal(await B.saveLegacyPeople(legacy), 2);
+  assert.equal((await B.getBeneficiary(5)).name, 'يوسف حسين علي المسماري');
+  assert.equal((await B.getBeneficiary(6)).family_key, '999');
 });
 
 test('user management: create, reset password, deactivate', async () => {
   const U = await import('../lib/users.js');
   const { checkPassword } = await import('../lib/session.js');
-  assert.throws(() => U.createUser({ username: 'ab', displayName: 'x', role: 'tpa' }), /اسم المستخدم/);
-  assert.throws(() => U.createUser({ username: 'jal1', displayName: 'x', role: 'entity' }), /الجهة/);
-  const c = U.createUser({ username: 'jal1', displayName: 'مراجع', role: 'entity', entityId: 2 });
-  assert.throws(() => U.createUser({ username: 'jal1', displayName: 'x', role: 'tpa' }), /من قبل/);
-  const u = U.listUsers().find((x) => x.username === 'jal1');
+  await assert.rejects(U.createUser({ username: 'ab', displayName: 'x', role: 'tpa' }), /اسم المستخدم/);
+  await assert.rejects(U.createUser({ username: 'jal1', displayName: 'x', role: 'entity' }), /الجهة/);
+  const c = await U.createUser({ username: 'jal1', displayName: 'مراجع', role: 'entity', entityId: 2 });
+  await assert.rejects(U.createUser({ username: 'jal1', displayName: 'x', role: 'tpa' }), /من قبل/);
+  const u = (await U.listUsers()).find((x) => x.username === 'jal1');
   assert.equal(u.entity, 'جليانة');
-  const hash = () => getDb().prepare('SELECT password_hash h FROM users WHERE id = ?').get(u.id).h;
-  assert.ok(checkPassword(c.password, hash()));
-  const r = U.resetPassword(u.id);
-  assert.ok(!checkPassword(c.password, hash()) && checkPassword(r.password, hash()));
-  assert.throws(() => U.setActive(u.id, false, u.id), /حسابك/);
-  U.setActive(u.id, false, 999);
-  assert.equal(U.listUsers().find((x) => x.id === u.id).active, 0);
-});
-
-test('specific completeness filters', () => {
-  const ids = (c) => B.listBeneficiaries({ entityId: 2, completeness: c, grouped: false }).rows.map((r) => r.id).sort();
-  assert.deepEqual(ids('no_photo'), [3]);
-  assert.deepEqual(ids('no_dob'), [3]);
-  assert.deepEqual(ids('no_employee'), []);
-});
-
-test('sorting by name, job and direction', () => {
-  const names = (o) => B.listBeneficiaries({ entityId: 2, grouped: false, ...o }).rows.map((r) => r.id);
-  assert.deepEqual(names({ sort: 'job' }).slice(-1), [4]);
-  assert.deepEqual(names({ sort: 'job', dir: 'desc' })[0], 4);
-  const byName = B.listBeneficiaries({ entityId: 2, grouped: false, sort: 'name' }).rows.map((r) => r.name);
-  assert.ok(byName[0].startsWith('خالد'), byName.join(',')); // خ قبل س ف م
-  const fam = B.listBeneficiaries({ entityId: 2, grouped: true, sort: 'employee', dir: 'desc' }).families.map((f) => f.familyKey);
-  assert.deepEqual(fam, ['33410', '33587']); // سالم بعد خالد، والترتيب تنازلي
+  const hash = async () => (await db.get('SELECT password_hash h FROM users WHERE id = ?', [u.id])).h;
+  assert.ok(checkPassword(c.password, await hash()));
+  const r = await U.resetPassword(u.id);
+  assert.ok(!checkPassword(c.password, await hash()) && checkPassword(r.password, await hash()));
+  await assert.rejects(U.setActive(u.id, false, u.id), /حسابك/);
+  await U.setActive(u.id, false, 999);
+  assert.equal((await U.listUsers()).find((x) => x.id === u.id).active, 0);
 });

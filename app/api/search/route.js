@@ -1,11 +1,11 @@
 import fs from 'fs';
 import path from 'path';
 import { loadLegacyPeople, saveLegacyPeople } from '../../../lib/beneficiaries.js';
-import { STORAGE_DIR } from '../../../lib/db.js';
+import { STORAGE_DIR } from '../../../lib/photos.js';
 import { requireUser } from '../../../lib/auth.js';
 import { NextResponse } from 'next/server';
 
-function loadPeople() {
+async function loadPeople() {
   return loadLegacyPeople();
 }
 
@@ -91,7 +91,7 @@ export async function GET(request) {
   const deletedFilter = searchParams.get('deleted') || ''; // '' = إخفاء المحذوف (افتراضي), 'only' = المحذوف فقط, 'all' = الكل
   const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
 
-  const all = loadPeople();
+  const all = await loadPeople();
   // حساب علامات العائلة (مكرر/بلا زوج) على الأشخاص غير المحذوفين فقط، حتى لا
   // تُحتسب سجلات محذوفة ضمن التكرار أو تواجد الزوج/الزوجة.
   const active = annotateFamilyFlags(all.filter((p) => !p.deleted));

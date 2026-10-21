@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { loadLegacyPeople, saveLegacyPeople } from '../../../lib/beneficiaries.js';
-import { STORAGE_DIR } from '../../../lib/db.js';
+import { STORAGE_DIR } from '../../../lib/photos.js';
 import { requireUser } from '../../../lib/auth.js';
 import { NextResponse } from 'next/server';
 
@@ -18,7 +18,7 @@ export async function POST(request) {
     return NextResponse.json({ error: 'لا توجد عناصر محددة' }, { status: 400 });
   }
 
-  const people = loadLegacyPeople();
+  const people = await loadLegacyPeople();
   const idSet = new Set(ids);
   const now = new Date().toISOString();
 
@@ -31,6 +31,6 @@ export async function POST(request) {
     }
   }
 
-  saveLegacyPeople(people);
+  await saveLegacyPeople(people);
   return NextResponse.json({ ok: true, count });
 }

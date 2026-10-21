@@ -3,7 +3,8 @@
 // الاستخدام: npm run db:import [-- --force] [-- --source path/to/people.json]
 import fs from 'node:fs';
 import path from 'node:path';
-import { openDb, tx, nowIso, DATA_DIR, DB_PATH, STORAGE_DIR } from '../lib/db.js';
+import { openDb, tx, nowIso, DATA_DIR, DB_PATH } from '../lib/db-node.js';
+import { STORAGE_DIR } from '../lib/photos.js';
 import { deriveRows, ENTITY_CODES } from '../lib/derive.js';
 
 const args = process.argv.slice(2);

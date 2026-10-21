@@ -18,7 +18,7 @@ export async function GET(request) {
     return NextResponse.json({ error: e.message }, { status: e.status || 403 });
   }
   const { searchParams } = new URL(request.url);
-  const rows = exportRows(filtersFrom(searchParams, user)).map((r) => ({
+  const rows = (await exportRows(filtersFrom(searchParams, user))).map((r) => ({
     ...(user.role === 'tpa' ? { 'الجهة': r.entity } : {}),
     'الرقم الوظيفي': r.jobNo || '',
     'اسم الموظف': r.employeeName || '',

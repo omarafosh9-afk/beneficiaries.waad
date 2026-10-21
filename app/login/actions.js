@@ -10,7 +10,7 @@ const HOME = { tpa: '/tpa', entity: '/review', printer: '/review' };
 export async function login(prevState, formData) {
   const username = String(formData.get('username') || '').trim();
   const password = String(formData.get('password') || '');
-  const u = getDb().prepare('SELECT id, role, password_hash FROM users WHERE username = ? AND active = 1').get(username);
+  const u = await (await getDb()).get('SELECT id, role, password_hash FROM users WHERE username = ? AND active = 1', [username]);
   if (!u || !checkPassword(password, u.password_hash)) {
     return { error: 'اسم المستخدم أو كلمة المرور غير صحيحة.' };
   }

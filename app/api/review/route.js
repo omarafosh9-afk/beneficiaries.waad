@@ -12,8 +12,8 @@ export async function GET(request) {
   }
   const { searchParams } = new URL(request.url);
   const f = filtersFrom(searchParams, user);
-  const data = listBeneficiaries(f);
-  data.intakeBatches = f.entityId ? intakeBatches(f.entityId) : [];
-  if (user.role === 'tpa') data.printBatches = listBatches();
+  const data = await listBeneficiaries(f);
+  data.intakeBatches = f.entityId ? await intakeBatches(f.entityId) : [];
+  if (user.role === 'tpa') data.printBatches = await listBatches();
   return NextResponse.json(data);
 }

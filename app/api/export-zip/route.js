@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { NextResponse } from 'next/server';
 import { loadLegacyPeople, saveLegacyPeople } from '../../../lib/beneficiaries.js';
-import { STORAGE_DIR } from '../../../lib/db.js';
+import { STORAGE_DIR } from '../../../lib/photos.js';
 import { requireUser } from '../../../lib/auth.js';
 import { buildZip } from '../../../lib/zip';
 
@@ -21,7 +21,7 @@ export async function POST(request) {
     return NextResponse.json({ error: 'لا توجد عناصر محددة' }, { status: 400 });
   }
 
-  const people = loadLegacyPeople();
+  const people = await loadLegacyPeople();
   const byId = new Map(people.map((p) => [p.id, p]));
 
   const files = [];
