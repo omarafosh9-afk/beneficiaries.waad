@@ -10,7 +10,9 @@
     "test": "node --no-warnings --test \"tests/*.test.mjs\"",
     "db:import": "node --no-warnings scripts/db-import.mjs",
     "db:backup": "node --no-warnings scripts/db-backup.mjs",
-    "user:add": "node --no-warnings scripts/user-add.mjs"
+    "user:add": "node --no-warnings scripts/user-add.mjs",
+    "cf:build": "cross-env CF_BUILD=1 opennextjs-cloudflare build",
+    "cf:deploy": "npm run cf:build && opennextjs-cloudflare deploy"
   },
   "dependencies": {
     "next": "^16.4.2",
@@ -22,6 +24,7 @@
   "devDependencies": {
     "@opennextjs/cloudflare": "^1.20.12",
     "@tailwindcss/postcss": "^4",
+    "cross-env": "^10.1.0",
     "tailwindcss": "^4",
     "wrangler": "^4.151.3"
   },

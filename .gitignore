@@ -44,3 +44,8 @@ next-env.d.ts
 /data/
 /public/storage/
 scripts/*.json
+
+# cloudflare
+/.open-next/
+/.wrangler/
+.dev.vars

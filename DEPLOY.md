@@ -48,3 +48,34 @@ server {
 docker compose run --rm beneficiaries node scripts/db-backup.mjs
 ```
 تُحفظ النسخة في `data/backups/`. انسخ مجلدي `data/` و`storage/` دوريًا خارج الخادم.
+
+---
+
+# التشغيل على Cloudflare Workers (الخطة المجانية)
+
+يعمل نفس الكود على Cloudflare: البيانات في D1 (`beneficiaries-db`) والصور في KV (`PHOTOS`).
+الإعداد في `wrangler.jsonc`. الرابط الحالي: https://beneficiaries.ufuq-alamal.workers.dev
+
+## قيود الخطة المجانية
+- 10 ملّي ثانية معالجة لكل طلب: الصفحات تعمل، لكن قد يظهر أحيانا خطأ 1102 مع العمليات الثقيلة.
+- الصور تُحفظ كما تُرفع بلا تصغير، وحدّها 1 ميغابايت.
+- الشاشة القديمة (البحث والصور والاستيراد) مخصصة للتشغيل المحلي/Docker.
+
+## تحديث النسخة المنشورة
+```
+npm run cf:deploy
+```
+
+## بيانات تجربة (تمسح بيانات D1 الحالية)
+```
+node scripts/cf-seed.mjs --entity Jalyana --photos 10     # يطبع كلمات مرور المستخدمين
+npx wrangler d1 execute beneficiaries-db --remote --file .wrangler/seed/seed.sql
+npx wrangler kv bulk put .wrangler/seed/photos.json --binding PHOTOS --remote
+```
+
+## أول مرة على حساب جديد
+```
+npx wrangler d1 create beneficiaries-db            # ضع database_id في wrangler.jsonc
+npx wrangler kv namespace create beneficiaries-photos   # ضع id في wrangler.jsonc
+npx wrangler secret put SESSION_SECRET             # نص عشوائي طويل
+```
