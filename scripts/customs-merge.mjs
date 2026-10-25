@@ -207,7 +207,13 @@ for (const c of all) {
 }
 
 // أشخاص يحملون رقم بطاقة شخص آخر: في القائمة بلا رقم، وفي التعارضات لإعطائهم رقمًا صحيحًا.
+// المستبعدون: ليسوا مسجّلين في TPA (المرجع) لعائلتهم، فلا يدخلون القائمة الموحدة.
+const excluded = [];
 for (const e of extra) {
+  if (e.action === 'exclude') {
+    excluded.push({ 'اسم المستفيد': e.name, 'المواليد': show(dob(e.dob)), 'رقم البطاقة السابق': e.was, 'السبب': e.note });
+    continue;
+  }
   merged.push({ 'اسم المستفيد': e.name, 'رقم البطاقة': '', 'المواليد': show(dob(e.dob)), 'الحالة': 'تعارض — يحتاج رقم بطاقة جديد' });
   conflicts.push({
     'رقم البطاقة': `(كان ${e.was})`,
@@ -223,6 +229,7 @@ wb.Workbook = { Views: [{ RTL: true }] };
 for (const [nm, list, widths] of [
   ['القائمة الموحدة', merged, [38, 20, 14, 34]],
   ['التعارضات', conflicts, [20, 34, 32, 32, 32, 14, 14, 14, 40, 20]],
+  ...(excluded.length ? [['مستبعدون', excluded, [34, 14, 22, 60]]] : []),
 ]) {
   const ws = XLSX.utils.json_to_sheet(list);
   ws['!views'] = [{ RTL: true }];
