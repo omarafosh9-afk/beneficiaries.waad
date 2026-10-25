@@ -24,7 +24,7 @@ export async function GET(request) {
     'اسم الموظف': r.employeeName || '',
     'اسم المستفيد': r.name,
     'صلة القرابة': r.relation,
-    'المواليد': r.dob,
+    'المواليد': /^\d{4}-\d{2}-\d{2}$/.test(r.dob) ? `${r.dob.slice(8, 10)}/${r.dob.slice(5, 7)}/${r.dob.slice(0, 4)}` : r.dob,
     'رقم البطاقة': r.card,
     'الحالة': STATUS_AR[r.status] || r.status,
     'حالة المستفيد': r.benStatus,

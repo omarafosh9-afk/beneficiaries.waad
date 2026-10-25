@@ -19,7 +19,9 @@ export function relLabel(r) {
 
 export function dobText(d) {
   if (!d) return '';
-  return /^\d{4}-\d{2}-\d{2}$/.test(d) ? d.replace(/-/g, '/') : d;
+  // العرض دائمًا dd/mm/yyyy (يُكتب من اليسار لليمين في الخلية).
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : d;
 }
 
 export function missingOf(m) {

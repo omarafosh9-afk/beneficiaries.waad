@@ -43,6 +43,12 @@ const DELETED_FILTERS = [
   { value: 'only', label: 'المحذوفة فقط' },
 ];
 
+// تاريخ الميلاد للعرض dd/mm/yyyy.
+function dmy(d) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d || '');
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : d;
+}
+
 export default function SearchClient({ onPick, refreshKey }) {
   const [q, setQ] = useState('');
   const [exactNum, setExactNum] = useState(false);
@@ -284,7 +290,7 @@ export default function SearchClient({ onPick, refreshKey }) {
                   <div className="text-xs text-red-600 mt-0.5" dir="ltr">٢: {p.card2}</div>
                 )
               )}
-              {p.dob && <div className="text-xs text-gray-500 mt-0.5" dir="ltr">{p.dob}</div>}
+              {p.dob && <div className="text-xs text-gray-500 mt-0.5" dir="ltr">{dmy(p.dob)}</div>}
               {p.batch === 1 && <span className="inline-block text-[10px] bg-emerald-100 text-emerald-800 rounded px-1.5 py-0.5 mt-1">دفعة أولى</span>}
               <div className="text-xs text-blue-700 mt-0.5">{p.companyLabel}{p.relation ? ` · ${p.relation}` : ''}</div>
             </div>

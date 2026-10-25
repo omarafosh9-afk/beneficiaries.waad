@@ -7,6 +7,12 @@ const initialEditState = { ok: null, message: '' };
 const initialDeleteState = { ok: null, message: '' };
 const RELATIONS = ['موظف أساسي', 'زوجة', 'زوج', 'ابن', 'ابنة', 'أب', 'أم'];
 
+// تاريخ الميلاد للعرض dd/mm/yyyy.
+function dmy(d) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d || '');
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : d;
+}
+
 export default function PersonDetail({ person, onClose, onSaved }) {
   const [editState, editAction, editPending] = useActionState(updatePerson, initialEditState);
   const [deleteState, deleteAction, deletePending] = useActionState(deletePerson, initialDeleteState);
@@ -126,7 +132,7 @@ export default function PersonDetail({ person, onClose, onSaved }) {
               {p.card2 && <Row label="رقم البطاقة الثاني" value={p.card2} />}
               {p.job && <Row label="الرقم الوظيفي" value={p.job} />}
               {p.national && <Row label="الرقم الوطني" value={p.national} />}
-              <Row label="تاريخ الميلاد" value={p.dob || '—'} />
+              <Row label="تاريخ الميلاد" value={dmy(p.dob) || '—'} />
               {p.status && <Row label="الحالة" value={p.status} />}
             </dl>
             {!p.deleted && (
