@@ -42,7 +42,7 @@ export async function editAction(formData) {
     const b = await getBeneficiary(id);
     if (!b || (u.role === 'entity' && b.entity_id !== u.entityId)) throw new Error('السجل غير موجود.');
     const dob = parseDob(formData.get('dob'));
-    if (dob === null) throw new Error('صيغة المواليد غير صحيحة (مثال: 2014/11/05 أو 1952).');
+    if (dob === null) throw new Error('صيغة المواليد غير صحيحة (اكتبه يوم/شهر/سنة، مثل 05/11/2014).');
 
     let photo = null;
     const file = formData.get('photo');

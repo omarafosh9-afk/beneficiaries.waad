@@ -2,10 +2,24 @@
 // لوحة تعديل بيانات مستفيد لجهة العمل: سبب إلزامي، صورة اختيارية، رقم البطاقة للعرض فقط.
 import { useRef, useState } from 'react';
 import { editAction } from './actions';
-import { Icon, Photo, btn, dobText, RELATIONS, relLabel } from './ui';
+import { Icon, Photo, btn, RELATIONS, relLabel } from './ui';
+
+// تاريخ الميلاد يُكتب أرقامًا متتالية (مثل 05112014) وتُضاف الشرطات تلقائيًا: dd/mm/yyyy.
+function maskDmy(v) {
+  const d = String(v).replace(/\D/g, '').slice(0, 8);
+  if (d.length <= 2) return d;
+  if (d.length <= 4) return `${d.slice(0, 2)}/${d.slice(2)}`;
+  return `${d.slice(0, 2)}/${d.slice(2, 4)}/${d.slice(4)}`;
+}
+
+// المخزّن YYYY-MM-DD ← dd/mm/yyyy في الحقل (سنة فقط تبقى كما هي).
+function toDmy(dob) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dob || '');
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : dob || '';
+}
 
 export default function EditDrawer({ m, onClose, onSaved }) {
-  const [form, setForm] = useState({ name: m.name, relation: m.relation, dob: dobText(m.dob), reason: '' });
+  const [form, setForm] = useState({ name: m.name, relation: m.relation, dob: toDmy(m.dob), reason: '' });
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [error, setError] = useState('');
@@ -82,7 +96,9 @@ export default function EditDrawer({ m, onClose, onSaved }) {
             </label>
             <label className="flex flex-col gap-1.5 font-semibold text-[#344054]">
               المواليد
-              <input value={form.dob} onChange={set('dob')} dir="ltr" placeholder="مثال: 2014/11/05" className="h-10 px-3 border border-[#D5DCE6] rounded-[10px] font-normal text-right" />
+              <input value={form.dob} onChange={(e) => { setForm({ ...form, dob: maskDmy(e.target.value) }); setError(''); }}
+                dir="ltr" inputMode="numeric" autoComplete="off" placeholder="dd/mm/yyyy" maxLength={10}
+                className="h-10 px-3 border border-[#D5DCE6] rounded-[10px] font-normal text-left tabular-nums tracking-wide" />
             </label>
           </div>
           <div className="flex flex-col gap-1.5">
