@@ -98,6 +98,35 @@ if (opt('resolved')) {
     }
   }
 }
+// الملف المصدر (قائمة الجهة الأصلية): المرجع لحل ما بقي من تعارضات.
+// --origin "الجمارك المصدر.xlsx": الاسم في العمود 3، المواليد في 5، رقم البطاقة في 6.
+const origin = new Map();
+// فهرس احتياطي: الرقم الوظيفي (من رقم البطاقة أو عمود الرقم الوظيفي) + الاسم المطبّع، لمن اختلف رقم بطاقته في المصدر.
+const originByFamilyName = new Map();
+const familyOf = (c) => (/^JMR2025(?:VIP)?(\d+)/.exec(c) || [])[1] || '';
+if (opt('origin')) {
+  const owb = XLSX.readFile(opt('origin'));
+  const rows = XLSX.utils.sheet_to_json(owb.Sheets[owb.SheetNames[0]], { header: 1, defval: '' });
+  let job = '';
+  for (const r of rows) {
+    if (String(r[1]).trim() && /^\d+$/.test(String(r[1]).trim())) job = String(r[1]).trim();
+    if (!String(r[2]).trim() || String(r[2]).includes('اسم المستفيد')) continue;
+    const c = card(r[5]);
+    const rec = { name: clean(r[2]), dob: dob(r[4]) };
+    if (/^JMR2025/.test(c)) {
+      if (!origin.has(c)) origin.set(c, []);
+      origin.get(c).push(rec);
+    }
+    const fam = familyOf(c) || job;
+    if (fam) {
+      const k = fam + '|' + normalizeAr(rec.name);
+      if (!originByFamilyName.has(k)) originByFamilyName.set(k, []);
+      originByFamilyName.get(k).push(rec);
+    }
+  }
+}
+const validDob = (d) => /^\d{4}-\d{2}-\d{2}$/.test(d) && Number(d.slice(0, 4)) >= 1900 && Number(d.slice(0, 4)) <= new Date().getFullYear();
+
 let extra = [];
 if (opt('decisions')) {
   const dec = JSON.parse(fs.readFileSync(opt('decisions'), 'utf8'));
@@ -106,6 +135,7 @@ if (opt('decisions')) {
 }
 
 const merged = [];
+const resolvedFromOrigin = [];
 const conflicts = [];
 const all = [...new Set(Object.values(sources).flatMap((m) => [...m.keys()]))].sort();
 for (const c of all) {
@@ -135,6 +165,24 @@ for (const c of all) {
     if (!(y >= 1900 && y <= new Date().getFullYear())) problems.push('سنة ميلاد غير منطقية');
   }
   if (here.length < 3) problems.push(`غير موجود في ${['TPA', 'الأسنان', 'المنظومة'].filter((s) => !here.includes(s)).join(' و')}`);
+
+  // حل التعارض من الملف المصدر: سجل واحد للبطاقة بمواليد صالحة.
+  const real = problems.filter((p) => !p.startsWith('غير موجود'));
+  let org = origin.get(c);
+  let how = 'معتمد من الملف المصدر';
+  // لم يوجد برقم البطاقة: يُبحث بالاسم داخل نفس العائلة، فقط إن كان الاسم متفقًا عليه بين المصادر.
+  if ((!org || org.length !== 1 || !validDob(org[0].dob)) && name.agree && name.value) {
+    const alt = originByFamilyName.get(familyOf(c) + '|' + normalizeAr(name.value));
+    if (alt && alt.length === 1 && validDob(alt[0].dob)) {
+      org = alt;
+      how = 'معتمد من الملف المصدر (بالاسم داخل العائلة)';
+    }
+  }
+  if (real.length && org && org.length === 1 && validDob(org[0].dob)) {
+    merged.push({ 'اسم المستفيد': org[0].name, 'رقم البطاقة': c, 'المواليد': show(org[0].dob), 'الحالة': how });
+    resolvedFromOrigin.push({ c, was: real.join('، ') });
+    continue;
+  }
 
   let status = 'مطابق في المصادر الثلاثة';
   if (problems.some((p) => p !== `غير موجود في ${['TPA', 'الأسنان', 'المنظومة'].filter((s) => !here.includes(s)).join(' و')}`)) status = 'تعارض — راجع ورقة التعارضات';
