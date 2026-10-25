@@ -528,10 +528,10 @@ function Batches({ batches }) {
 }
 
 const COLS = {
-  entityGrouped: '56px 76px minmax(220px,2fr) minmax(96px,.8fr) minmax(120px,.9fr) minmax(170px,1.2fr) minmax(150px,1fr) minmax(200px,1.2fr)',
-  entityFlat: '56px 76px 104px minmax(170px,1.4fr) minmax(190px,1.6fr) 96px 120px minmax(160px,1fr) minmax(140px,1fr) minmax(190px,1.1fr)',
-  tpaGrouped: '56px 76px minmax(220px,2fr) minmax(96px,.8fr) minmax(120px,.9fr) minmax(170px,1.2fr) minmax(170px,1fr) 170px',
-  tpaFlat: '56px 64px 92px 96px minmax(160px,1.3fr) minmax(180px,1.5fr) 88px 116px minmax(150px,1fr) minmax(170px,1fr) 170px',
+  entityGrouped: '56px 84px minmax(220px,2fr) minmax(96px,.8fr) minmax(120px,.9fr) minmax(170px,1.2fr) minmax(150px,1fr) minmax(200px,1.2fr)',
+  entityFlat: '56px 84px 104px minmax(170px,1.4fr) minmax(190px,1.6fr) 96px 120px minmax(160px,1fr) minmax(140px,1fr) minmax(190px,1.1fr)',
+  tpaGrouped: '56px 84px minmax(220px,2fr) minmax(96px,.8fr) minmax(120px,.9fr) minmax(170px,1.2fr) minmax(170px,1fr) 170px',
+  tpaFlat: '56px 84px 92px 96px minmax(160px,1.3fr) minmax(180px,1.5fr) 88px 116px minmax(150px,1fr) minmax(170px,1fr) 170px',
 };
 
 const SORTABLE = { 'الرقم الوظيفي': 'job', 'اسم الموظف': 'employee', 'اسم المستفيد': 'name' };
