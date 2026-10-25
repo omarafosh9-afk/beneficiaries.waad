@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# يُشغَّل على السيرفر مرة واحدة: sudo bash deploy/server/setup.sh beneficiaries.alwaha-care.ly
+# يُشغَّل على السيرفر مرة واحدة: sudo bash deploy/server/setup.sh beneficiaries.den-op-ph.ly
 # يفترض أن البيانات رُفعت مسبقًا إلى /opt/beneficiaries-data (انظر push-data.ps1).
 set -euo pipefail
-DOMAIN="${1:-beneficiaries.alwaha-care.ly}"
+DOMAIN="${1:-beneficiaries.den-op-ph.ly}"
 APP_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 DATA=/opt/beneficiaries-data
 cd "$APP_DIR/deploy/server"
@@ -29,7 +29,7 @@ fi
 docker compose -f docker-compose.server.yml up -d
 
 echo "== 4) Nginx"
-sed "s/beneficiaries.alwaha-care.ly/$DOMAIN/g" nginx-beneficiaries.conf > /etc/nginx/sites-available/beneficiaries
+sed "s/beneficiaries.den-op-ph.ly/$DOMAIN/g" nginx-beneficiaries.conf > /etc/nginx/sites-available/beneficiaries
 ln -sf /etc/nginx/sites-available/beneficiaries /etc/nginx/sites-enabled/beneficiaries
 nginx -t && systemctl reload nginx
 
