@@ -91,7 +91,9 @@ if (opt('resolved')) {
   for (const r of XLSX.utils.sheet_to_json(rwb.Sheets['التعارضات'], { defval: '', raw: false })) {
     const names = ['الاسم - TPA', 'الاسم - الأسنان', 'الاسم - المنظومة'].flatMap((k) => split(r[k]));
     const dobs = ['المواليد - TPA', 'المواليد - الأسنان', 'المواليد - المنظومة'].flatMap((k) => split(r[k])).map(dob);
-    if (names.length && new Set(names.map(normalizeAr)).size === 1 && dobs.length && new Set(dobs).size === 1) {
+    const y = Number(String(dobs[0] || '').slice(0, 4));
+    const validYear = y >= 1900 && y <= new Date().getFullYear();
+    if (names.length && new Set(names.map(normalizeAr)).size === 1 && dobs.length && new Set(dobs).size === 1 && validYear) {
       overrides.set(card(r['رقم البطاقة']), { name: names[0], dob: dobs[0], source: 'مراجعة يدوية' });
     }
   }
