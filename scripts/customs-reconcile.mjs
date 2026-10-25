@@ -35,7 +35,11 @@ function dob(v) {
     const d = XLSX.SSF.parse_date_code(v);
     return `${d.y}-${String(d.m).padStart(2, '0')}-${String(d.d).padStart(2, '0')}`;
   }
-  const s = String(v).trim();
+  // أرقام عربية وأسماء أشهر عربية (مثل «أكتوبر ١٢, ١٩٧٤»).
+  const s = String(v).trim().replace(/[٠-٩]/g, (ch) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(ch)));
+  const AR_MONTHS = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+  const am = /^(\S+)\s+(\d{1,2}),?\s+(\d{4})$/.exec(s);
+  if (am && AR_MONTHS.includes(am[1])) return `${am[3]}-${String(AR_MONTHS.indexOf(am[1]) + 1).padStart(2, '0')}-${am[2].padStart(2, '0')}`;
   let m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(s);
   if (m) return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
   m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
