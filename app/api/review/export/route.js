@@ -27,6 +27,7 @@ export async function GET(request) {
     'المواليد': r.dob,
     'رقم البطاقة': r.card,
     'الحالة': STATUS_AR[r.status] || r.status,
+    'حالة المستفيد': r.benStatus,
     'سبب التعديل': r.reason,
     'ملاحظة TPA': r.note,
   }));

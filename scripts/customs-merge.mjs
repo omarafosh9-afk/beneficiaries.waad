@@ -63,9 +63,16 @@ const add = (src, c, rec) => {
 for (const r of read(/tpa/i)) {
   add('TPA', card(r.card_number || (r.relationship === 'PRINCIPAL' ? r.principal_card_number : '')), { name: clean(r.full_name), dob: dob(r.birth_date) });
 }
-for (const r of read(/أسنان/)) add('الأسنان', card(r['رقم البطاقة']), { name: clean(r['الاسم']), dob: dob(r['تاريخ الميلاد']) });
+// حالة المستفيد (نشط / موقوف / مكتمل): من منظومة الأسنان، وإلا من منظومتنا، وإلا نشط (TPA كلها ACTIVE).
+const beneficiaryStatus = new Map();
+for (const r of read(/أسنان/)) {
+  const c = card(r['رقم البطاقة']);
+  add('الأسنان', c, { name: clean(r['الاسم']), dob: dob(r['تاريخ الميلاد']) });
+  if (c && r['الحالة']) beneficiaryStatus.set(c, String(r['الحالة']).trim());
+}
 const db = openDb();
 for (const r of db.prepare('SELECT * FROM beneficiaries WHERE entity_id = 3 AND deleted = 0').all()) {
+  if (r.legacy_status && !beneficiaryStatus.has(card(r.card1 || r.card2))) beneficiaryStatus.set(card(r.card1 || r.card2), r.legacy_status);
   add('المنظومة', card(r.card1 || r.card2), { name: clean(r.name), dob: dob(r.dob) });
 }
 
@@ -224,10 +231,12 @@ for (const e of extra) {
   });
 }
 
+for (const r of merged) r['حالة المستفيد'] = r['رقم البطاقة'] ? beneficiaryStatus.get(r['رقم البطاقة']) || 'نشط' : '';
+
 const wb = XLSX.utils.book_new();
 wb.Workbook = { Views: [{ RTL: true }] };
 for (const [nm, list, widths] of [
-  ['القائمة الموحدة', merged, [38, 20, 14, 34]],
+  ['القائمة الموحدة', merged, [38, 20, 14, 34, 14]],
   ['التعارضات', conflicts, [20, 34, 32, 32, 32, 14, 14, 14, 40, 20]],
   ...(excluded.length ? [['مستبعدون', excluded, [34, 14, 22, 60]]] : []),
 ]) {

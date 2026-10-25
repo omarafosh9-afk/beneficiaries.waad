@@ -34,6 +34,7 @@ export default function ReviewBoard({ mode, user }) {
   const [relation, setRelation] = useState('');
   const [completeness, setCompleteness] = useState('');
   const [intake, setIntake] = useState('');
+  const [benStatus, setBenStatus] = useState('');
   const [grouped, setGrouped] = useState(!isTpa);
   const [view, setView] = useState('table');
   const [page, setPage] = useState(1);
@@ -67,8 +68,8 @@ export default function ReviewBoard({ mode, user }) {
   }, [qInput]);
 
   const filter = useMemo(
-    () => ({ entityId: entity || null, tab, q, relation, completeness, intake, grouped, sort: sort.key, dir: sort.dir }),
-    [entity, tab, q, relation, completeness, intake, grouped, sort]
+    () => ({ entityId: entity || null, tab, q, relation, completeness, intake, benStatus, grouped, sort: sort.key, dir: sort.dir }),
+    [entity, tab, q, relation, completeness, intake, benStatus, grouped, sort]
   );
 
   // أي تغيير في الفلاتر يعيد للصفحة الأولى ويلغي التحديد.
@@ -86,11 +87,12 @@ export default function ReviewBoard({ mode, user }) {
     if (relation) p.set('relation', relation);
     if (completeness) p.set('completeness', completeness);
     if (intake) p.set('intake', intake);
+    if (benStatus) p.set('benStatus', benStatus);
     p.set('grouped', grouped ? '1' : '0');
     p.set('sort', sort.key);
     p.set('dir', sort.dir);
     return p;
-  }, [filter, tab, q, relation, completeness, intake, grouped, sort]);
+  }, [filter, tab, q, relation, completeness, intake, benStatus, grouped, sort]);
 
   useEffect(() => {
     let alive = true;
@@ -269,6 +271,14 @@ export default function ReviewBoard({ mode, user }) {
               <option value="ابنة">ابنة</option>
               <option value="أب">أب</option>
               <option value="أم">أم</option>
+            </select>
+          </Field>
+          <Field label="حالة المستفيد" width="w-32">
+            <select value={benStatus} onChange={(e) => setBenStatus(e.target.value)} className="h-10 px-3 border border-[#D5DCE6] rounded-[10px] bg-white">
+              <option value="">الكل</option>
+              <option value="نشط">نشط</option>
+              <option value="موقوف">موقوف</option>
+              <option value="مكتمل">مكتمل</option>
             </select>
           </Field>
           <Field label="اكتمال البيانات" width="w-48">
@@ -608,7 +618,12 @@ function Row({ m, cols, flat, isTpa, selected, selectable, onToggle, onApprove, 
       {flat && <div className="px-3"><span dir="ltr" className="font-mono text-[13px] text-[#344054]">{m.jobNo || '—'}</span></div>}
       {flat && <div className="px-3 text-[#344054]">{m.employeeName || '—'}</div>}
       <div className="px-3 py-1.5 min-w-0 flex flex-col gap-1">
-        <span className={`font-semibold ${changed('name') ? 'text-[#1D4ED8]' : ''}`}>{m.name}</span>
+        <span className="flex flex-wrap items-center gap-1.5">
+          <span className={`font-semibold ${changed('name') ? 'text-[#1D4ED8]' : ''}`}>{m.name}</span>
+          {m.benStatus && m.benStatus !== 'نشط' && (
+            <span className={`inline-flex h-5 items-center px-1.5 rounded text-[11px] font-bold ${m.benStatus === 'موقوف' ? 'bg-[#FEECEB] text-[#B42318]' : 'bg-[#EEF1F5] text-[#475467]'}`}>{m.benStatus}</span>
+          )}
+        </span>
         {changed('name') && <Prev value={m.prev.name} />}
         {m.status === 'needs_edit' && m.note && (
           <span className="flex items-start gap-1.5 text-xs font-semibold text-[#B54708]"><Icon name="alert" size={14} className="mt-0.5" />{isTpa ? 'ملاحظة أُرسلت' : 'ملاحظة TPA'}: {m.note}</span>
