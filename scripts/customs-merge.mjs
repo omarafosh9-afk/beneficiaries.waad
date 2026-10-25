@@ -128,6 +128,10 @@ for (const c of all) {
   if (!name.agree) problems.push('اختلاف الاسم');
   if (!birth.agree) problems.push('اختلاف المواليد');
   if (!birth.value) problems.push('بلا مواليد');
+  else {
+    const y = Number(birth.value.slice(0, 4));
+    if (!(y >= 1900 && y <= new Date().getFullYear())) problems.push('سنة ميلاد غير منطقية');
+  }
   if (here.length < 3) problems.push(`غير موجود في ${['TPA', 'الأسنان', 'المنظومة'].filter((s) => !here.includes(s)).join(' و')}`);
 
   let status = 'مطابق في المصادر الثلاثة';
