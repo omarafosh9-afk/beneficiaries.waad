@@ -44,10 +44,10 @@ function dob(v) {
   const s = String(v).trim().replace(/[٠-٩]/g, (ch) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(ch)));
   const am = /^(\S+)\s+(\d{1,2}),?\s+(\d{4})$/.exec(s);
   if (am && AR_MONTHS.includes(am[1])) return `${am[3]}-${String(AR_MONTHS.indexOf(am[1]) + 1).padStart(2, '0')}-${am[2].padStart(2, '0')}`;
-  let m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(s);
+  let m = /^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/.exec(s);
   if (m) return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
-  m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
-  return m ? m[0] : s;
+  m = /^(\d{4})[/-](\d{1,2})[/-](\d{1,2})/.exec(s);
+  return m ? `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}` : s;
 }
 const show = (d) => (/^\d{4}-\d{2}-\d{2}$/.test(d) ? `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}` : d);
 const clean = (n) => String(n || '').replace(/\s+/g, ' ').trim();
