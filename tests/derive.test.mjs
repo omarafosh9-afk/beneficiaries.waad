@@ -40,3 +40,9 @@ test('parseDob', () => {
   assert.equal(parseDob('abc'), null);
   assert.equal(parseDob('1800'), null);
 });
+
+test('parseDob accepts dd/mm/yyyy', () => {
+  assert.equal(parseDob('05/11/2014'), '2014-11-05');
+  assert.equal(parseDob('5/1/2014'), '2014-01-05');
+  assert.equal(parseDob('31/02/2014'), null);
+});
