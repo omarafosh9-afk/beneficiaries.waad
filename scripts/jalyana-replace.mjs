@@ -29,7 +29,7 @@ for (const r of raw) {
   if (!name) continue;
   const rel = String(r[3] || '').trim();
   const y = String(r[4] || '').trim();
-  list.push({ job, name, relation: REL[rel] || rel, year: /^\d{4}$/.test(y) ? y : '', national: String(r[5] || '').trim() });
+  list.push({ serial: Number(r[0]) || null, job, name, relation: REL[rel] || rel, year: /^\d{4}$/.test(y) ? y : '', national: String(r[5] || '').trim() });
 }
 
 const db = openDb();
@@ -103,26 +103,28 @@ tx(db, () => {
   const del = db.prepare('UPDATE beneficiaries SET deleted = 1, version = version + 1, updated_at = ? WHERE id = ?');
   for (const r of remove) { del.run(at, r.id); ev.run(r.id, 'delete', 'deleted', '0', '1', 'ليس في قائمة جليانة 2027', ACTOR, at); }
 
-  const upd = db.prepare('UPDATE beneficiaries SET national_id = ?, dob = ?, intake_batch = 1, search_key = ?, version = version + 1, updated_at = ? WHERE id = ?');
+  // الرقم التسلسلي يُصفَّر أولًا ثم يُعاد ضبطه، حتى لا يتعارض مع الفهرس الفريد أثناء التحديث.
+  db.prepare('UPDATE beneficiaries SET list_serial = NULL WHERE entity_id = ? AND intake_batch = 1').run(ENTITY);
+  const upd = db.prepare('UPDATE beneficiaries SET national_id = ?, dob = ?, intake_batch = 1, list_serial = ?, search_key = ?, version = version + 1, updated_at = ? WHERE id = ?');
   for (const { p, b } of keep) {
     const national = p.national || b.national_id;
     const dob = b.dob || p.year || null;
     if (national !== b.national_id) ev.run(b.id, 'list_sync', 'national_id', b.national_id || '', national, 'قائمة جليانة 2027', ACTOR, at);
     if (dob !== b.dob) ev.run(b.id, 'list_sync', 'dob', b.dob || '', dob, 'قائمة جليانة 2027', ACTOR, at);
-    upd.run(national, dob, buildSearchKey({ ...b, national_id: national }), at, b.id);
+    upd.run(national, dob, p.serial, buildSearchKey({ ...b, national_id: national }), at, b.id);
   }
 
   let nextId = db.prepare('SELECT MAX(id) m FROM beneficiaries').get().m;
   const ins = db.prepare(
-    `INSERT INTO beneficiaries (id, entity_id, family_key, job_no, employee_name, name, relation, dob, national_id, intake_batch, legacy_status, search_key, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'نشط', ?, ?)`
+    `INSERT INTO beneficiaries (id, entity_id, family_key, job_no, employee_name, name, relation, dob, national_id, intake_batch, list_serial, legacy_status, search_key, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, 'نشط', ?, ?)`
   );
   for (const p of add) {
     const fam = p.job || `name:${normalizeAr(p.name)}`;
     const head = list.find((x) => x.job === p.job && isPrincipal(x.relation));
     const row = { id: ++nextId, family_key: fam, job_no: p.job || null, employee_name: isPrincipal(p.relation) ? p.name : head?.name || null,
       name: p.name, relation: p.relation, dob: p.year || null, national_id: p.national || null };
-    ins.run(row.id, ENTITY, row.family_key, row.job_no, row.employee_name, row.name, row.relation, row.dob, row.national_id, buildSearchKey(row), at);
+    ins.run(row.id, ENTITY, row.family_key, row.job_no, row.employee_name, row.name, row.relation, row.dob, row.national_id, p.serial, buildSearchKey(row), at);
     ev.run(row.id, 'add', null, null, null, 'من قائمة جليانة 2027 (بلا رقم بطاقة)', ACTOR, at);
   }
 });

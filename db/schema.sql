@@ -65,3 +65,7 @@ INSERT INTO entities (id, code, name_ar, card_prefix) VALUES
   (1, 'Cement', 'الاسمنت', 'LCC'),
   (2, 'Jalyana', 'جليانة', 'JFZ'),
   (3, 'Jamarek', 'الجمارك', 'JMR');
+
+-- v2
+ALTER TABLE beneficiaries ADD COLUMN list_serial INTEGER;
+CREATE UNIQUE INDEX idx_benef_list_serial ON beneficiaries(entity_id, intake_batch, list_serial) WHERE list_serial IS NOT NULL AND deleted = 0;
