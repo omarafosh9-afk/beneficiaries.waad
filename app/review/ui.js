@@ -104,6 +104,12 @@ const PATHS = {
       <path d="M12 3v12" />
     </>
   ),
+  plus: (
+    <>
+      <path d="M12 5v14" />
+      <path d="M5 12h14" />
+    </>
+  ),
   x: (
     <>
       <path d="M18 6 6 18" />

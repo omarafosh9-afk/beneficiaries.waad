@@ -1,11 +1,11 @@
 'use client';
-// لوحة تعديل بيانات مستفيد لجهة العمل: سبب إلزامي، صورة اختيارية، رقم البطاقة للعرض فقط.
+// لوحة تعديل بيانات مستفيد (جهة العمل وTPA): سبب إلزامي وصورة اختيارية.
 import { useRef, useState } from 'react';
 import { editAction } from './actions';
 import { Icon, Photo, btn, RELATIONS, relLabel } from './ui';
 
 // تاريخ الميلاد يُكتب أرقامًا متتالية (مثل 05112014) وتُضاف الشرطات تلقائيًا: dd/mm/yyyy.
-function maskDmy(v) {
+export function maskDmy(v) {
   const d = String(v).replace(/\D/g, '').slice(0, 8);
   if (d.length <= 2) return d;
   if (d.length <= 4) return `${d.slice(0, 2)}/${d.slice(2)}`;
@@ -100,13 +100,6 @@ export default function EditDrawer({ m, onClose, onSaved }) {
                 dir="ltr" inputMode="numeric" autoComplete="off" placeholder="dd/mm/yyyy" maxLength={10}
                 className="h-10 px-3 border border-[#D5DCE6] rounded-[10px] font-normal text-left tabular-nums tracking-wide" />
             </label>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <span className="font-semibold text-[#344054]">رقم البطاقة</span>
-            <div className="flex flex-wrap items-center justify-between gap-2 min-h-10 px-3 border border-dashed border-[#D5DCE6] rounded-[10px] bg-[#F8FAFC] text-[#5B6475]">
-              <span dir="ltr" className="font-mono text-[#344054]">{m.card}</span>
-              <span className="inline-flex items-center gap-1.5 text-xs"><Icon name="lock" size={14} />تحدده شركة TPA ولا يُعدَّل هنا</span>
-            </div>
           </div>
           <label className="flex flex-col gap-1.5 font-semibold text-[#344054]">
             <span>سبب التعديل <span className="text-[#B42318]">*</span></span>

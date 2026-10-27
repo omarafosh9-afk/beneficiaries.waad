@@ -12,6 +12,7 @@ import {
   previewApprovalAction, approveAction, returnAction, previewForwardAction, forwardAction,
 } from './actions';
 import EditDrawer from './EditDrawer';
+import AddDrawer from './AddDrawer';
 
 const ENTITIES = [
   { id: 1, name: 'الاسمنت' },
@@ -46,6 +47,7 @@ export default function ReviewBoard({ mode, user }) {
   const [allMatching, setAllMatching] = useState(false);
   const [dialog, setDialog] = useState(null); // {kind, ...}
   const [editing, setEditing] = useState(null);
+  const [adding, setAdding] = useState(false);
   const [toast, setToast] = useState('');
   const toastTimer = useRef(null);
   const [reloadKey, setReloadKey] = useState(0);
@@ -314,6 +316,7 @@ export default function ReviewBoard({ mode, user }) {
             </div>
           )}
           <a href={exportHref} className={btn.ghost}><Icon name="download" />تصدير</a>
+          <button type="button" className={btn.ghost} onClick={() => setAdding(true)}><Icon name="plus" />إضافة مستفيد</button>
           {isTpa ? null : (
             <button type="button" className={btn.primary} disabled={!allMatching && !sel.size} onClick={() => openApprove()}>
               <Icon name="check" strokeWidth={2.4} />اعتماد المحدد {selCount === null ? '(كل المطابق)' : `(${selCount})`}
@@ -369,7 +372,6 @@ export default function ReviewBoard({ mode, user }) {
                 <div className="flex flex-col items-center gap-0.5 text-center">
                   <span className={`font-bold ${m.prev.name !== undefined ? 'text-[#1D4ED8]' : ''}`}>{m.name}</span>
                   <span className="text-[13px] text-[#5B6475]">{relLabel(m.relation)} · <span dir="ltr">{dobText(m.dob) || '—'}</span></span>
-                  <span dir="ltr" className="font-mono text-[13px] text-[#344054]">{m.card}</span>
                   <span className="text-xs text-[#5B6475]">الرقم الوظيفي {m.jobNo || '—'}</span>
                 </div>
                 {m.status === 'needs_edit' && m.note && <span className="text-xs font-semibold text-[#B54708] text-center">ملاحظة TPA: {m.note}</span>}
@@ -446,10 +448,18 @@ export default function ReviewBoard({ mode, user }) {
         </Dialog>
       )}
 
+      {adding && (
+        <AddDrawer entities={fixedEntity ? null : ENTITIES} entityId={fixedEntity || entity || ''} onClose={() => setAdding(false)} onSaved={(v) => {
+          setAdding(false);
+          say(`أُضيف ${v.name} بالتسلسل ${v.seq} وحالته «بانتظار التحقق»`);
+          reload();
+        }} />
+      )}
+
       {editing && (
         <EditDrawer m={editing} onClose={() => setEditing(null)} onSaved={() => {
           setEditing(null);
-          say('حُفظ التعديل وأصبحت الحالة «معدل»، وتراه شركة TPA مع القيمة القديمة');
+          say(isTpa ? 'حُفظ التعديل وأصبحت الحالة «معدل»' : 'حُفظ التعديل وأصبحت الحالة «معدل»، وتراه شركة TPA مع القيمة القديمة');
           reload();
         }} />
       )}
@@ -528,10 +538,10 @@ function Batches({ batches }) {
 }
 
 const COLS = {
-  entityGrouped: '56px 84px minmax(220px,2fr) minmax(96px,.8fr) minmax(120px,.9fr) minmax(170px,1.2fr) minmax(150px,1fr) minmax(200px,1.2fr)',
-  entityFlat: '56px 84px 96px 104px minmax(170px,1.4fr) minmax(190px,1.6fr) 96px 120px minmax(160px,1fr) minmax(140px,1fr) minmax(190px,1.1fr)',
-  tpaGrouped: '56px 84px minmax(220px,2fr) minmax(96px,.8fr) minmax(120px,.9fr) minmax(170px,1.2fr) minmax(170px,1fr) 170px',
-  tpaFlat: '56px 84px 92px 96px 96px minmax(160px,1.3fr) minmax(180px,1.5fr) 88px 116px minmax(150px,1fr) minmax(170px,1fr) 170px',
+  entityGrouped: '56px 84px minmax(220px,2fr) minmax(96px,.8fr) minmax(120px,.9fr) minmax(150px,1fr) minmax(200px,1.2fr)',
+  entityFlat: '56px 84px 96px 104px minmax(170px,1.4fr) minmax(190px,1.6fr) 96px 120px minmax(140px,1fr) minmax(190px,1.1fr)',
+  tpaGrouped: '56px 84px minmax(220px,2fr) minmax(96px,.8fr) minmax(120px,.9fr) minmax(170px,1fr) 230px',
+  tpaFlat: '56px 84px 92px 96px 96px minmax(160px,1.3fr) minmax(180px,1.5fr) 88px 116px minmax(170px,1fr) 230px',
 };
 
 const SORTABLE = { 'التسلسل': 'serial', 'الرقم الوظيفي': 'job', 'اسم الموظف': 'employee', 'اسم المستفيد': 'name' };
@@ -540,8 +550,8 @@ function Table({ sort, onSort, isTpa, grouped, data, sel, canSelect, allVisSel, 
   const cols = COLS[(isTpa ? 'tpa' : 'entity') + (grouped ? 'Grouped' : 'Flat')];
   const minW = grouped ? 1080 : 1380;
   const head = grouped
-    ? ['الصورة', 'اسم المستفيد', 'صلة القرابة', 'المواليد', 'رقم البطاقة', 'الحالة', 'إجراءات']
-    : [...['الصورة'], ...(isTpa ? ['الجهة'] : []), 'التسلسل', 'الرقم الوظيفي', 'اسم الموظف', 'اسم المستفيد', 'صلة القرابة', 'المواليد', 'رقم البطاقة', 'الحالة', 'إجراءات'];
+    ? ['الصورة', 'اسم المستفيد', 'صلة القرابة', 'المواليد', 'الحالة', 'إجراءات']
+    : [...['الصورة'], ...(isTpa ? ['الجهة'] : []), 'التسلسل', 'الرقم الوظيفي', 'اسم الموظف', 'اسم المستفيد', 'صلة القرابة', 'المواليد', 'الحالة', 'إجراءات'];
   const row = (m) => (
     <Row key={m.id} m={m} cols={cols} flat={!grouped} isTpa={isTpa} selected={sel.has(m.id)} selectable={canSelect(m)}
       onToggle={() => onToggle(m)} onApprove={onApprove} onEdit={onEdit} onReturn={onReturn} />
@@ -657,7 +667,6 @@ function Row({ m, cols, flat, isTpa, selected, selectable, onToggle, onApprove, 
         {/^\d{4}$/.test(m.dob) && <span className="text-xs text-[#5B6475]">سنة فقط</span>}
         {changed('dob') && <Prev value={dobText(m.prev.dob)} ltr />}
       </div>
-      <div className="px-3 py-1.5"><span dir="ltr" className="font-mono text-[13px] text-[#344054]">{m.card}</span></div>
       <div className="px-3 py-1.5 flex flex-col items-start gap-1">
         <StatusBadge status={m.status} />
         {m.batch && <span className="text-xs text-[#5B6475]">دفعة الطباعة {m.batch}</span>}
@@ -678,10 +687,16 @@ function RowActions({ m, isTpa, onApprove, onEdit, onReturn }) {
     return <span className="inline-flex items-center gap-1.5 text-[13px] text-[#5B6475]"><Icon name="lock" size={15} />مقفل بعد الترحيل</span>;
   }
   if (isTpa) {
-    if (m.status === 'correct' || m.status === 'modified') {
-      return <button type="button" onClick={() => onReturn(m)} className={btn.warn}><Icon name="undo" size={16} />إعادة للتعديل</button>;
-    }
-    return <span className="text-[13px] text-[#5B6475]">{m.status === 'pending' ? 'بانتظار جهة العمل' : 'لدى جهة العمل للتعديل'}</span>;
+    return (
+      <div className="flex flex-wrap items-center gap-2">
+        <button type="button" onClick={() => onEdit(m)} className="inline-flex items-center gap-1 h-8 px-2.5 rounded-lg text-[13px] border border-[#D5DCE6] bg-white hover:bg-[#F2F4F7] text-[#344054] font-semibold">
+          <Icon name="pencil" size={16} />تعديل
+        </button>
+        {(m.status === 'correct' || m.status === 'modified') && (
+          <button type="button" onClick={() => onReturn(m)} className={btn.warn}><Icon name="undo" size={16} />إعادة للتعديل</button>
+        )}
+      </div>
+    );
   }
   return (
     <div className="flex flex-wrap items-center gap-2">
