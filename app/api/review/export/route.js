@@ -20,6 +20,9 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const rows = (await exportRows(filtersFrom(searchParams, user))).map((r) => ({
     ...(user.role === 'tpa' ? { 'الجهة': r.entity } : {}),
+    'التسلسل العام': r.seq ?? '',
+    'الدفعة': r.listBatch || '',
+    'التسلسل في الدفعة': r.serial ?? '',
     'الرقم الوظيفي': r.jobNo || '',
     'اسم الموظف': r.employeeName || '',
     'اسم المستفيد': r.name,

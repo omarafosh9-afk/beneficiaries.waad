@@ -69,3 +69,6 @@ INSERT INTO entities (id, code, name_ar, card_prefix) VALUES
 -- v2
 ALTER TABLE beneficiaries ADD COLUMN list_serial INTEGER;
 CREATE UNIQUE INDEX idx_benef_list_serial ON beneficiaries(entity_id, intake_batch, list_serial) WHERE list_serial IS NOT NULL AND deleted = 0;
+
+-- v3
+ALTER TABLE beneficiaries ADD COLUMN seq INTEGER;

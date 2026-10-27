@@ -38,7 +38,7 @@ export default function ReviewBoard({ mode, user }) {
   const [grouped, setGrouped] = useState(!isTpa);
   const [view, setView] = useState('table');
   const [page, setPage] = useState(1);
-  const [sort, setSort] = useState({ key: 'job', dir: 'asc' });
+  const [sort, setSort] = useState({ key: 'serial', dir: 'asc' });
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -529,19 +529,19 @@ function Batches({ batches }) {
 
 const COLS = {
   entityGrouped: '56px 84px minmax(220px,2fr) minmax(96px,.8fr) minmax(120px,.9fr) minmax(170px,1.2fr) minmax(150px,1fr) minmax(200px,1.2fr)',
-  entityFlat: '56px 84px 104px minmax(170px,1.4fr) minmax(190px,1.6fr) 96px 120px minmax(160px,1fr) minmax(140px,1fr) minmax(190px,1.1fr)',
+  entityFlat: '56px 84px 96px 104px minmax(170px,1.4fr) minmax(190px,1.6fr) 96px 120px minmax(160px,1fr) minmax(140px,1fr) minmax(190px,1.1fr)',
   tpaGrouped: '56px 84px minmax(220px,2fr) minmax(96px,.8fr) minmax(120px,.9fr) minmax(170px,1.2fr) minmax(170px,1fr) 170px',
-  tpaFlat: '56px 84px 92px 96px minmax(160px,1.3fr) minmax(180px,1.5fr) 88px 116px minmax(150px,1fr) minmax(170px,1fr) 170px',
+  tpaFlat: '56px 84px 92px 96px 96px minmax(160px,1.3fr) minmax(180px,1.5fr) 88px 116px minmax(150px,1fr) minmax(170px,1fr) 170px',
 };
 
-const SORTABLE = { 'الرقم الوظيفي': 'job', 'اسم الموظف': 'employee', 'اسم المستفيد': 'name' };
+const SORTABLE = { 'التسلسل': 'serial', 'الرقم الوظيفي': 'job', 'اسم الموظف': 'employee', 'اسم المستفيد': 'name' };
 
 function Table({ sort, onSort, isTpa, grouped, data, sel, canSelect, allVisSel, noneSelectable, onToggleAll, onToggle, onToggleFamily, onApproveFamily, onApprove, onEdit, onReturn }) {
   const cols = COLS[(isTpa ? 'tpa' : 'entity') + (grouped ? 'Grouped' : 'Flat')];
-  const minW = grouped ? 1080 : isTpa ? 1300 : 1300;
+  const minW = grouped ? 1080 : 1380;
   const head = grouped
     ? ['الصورة', 'اسم المستفيد', 'صلة القرابة', 'المواليد', 'رقم البطاقة', 'الحالة', 'إجراءات']
-    : [...['الصورة'], ...(isTpa ? ['الجهة'] : []), 'الرقم الوظيفي', 'اسم الموظف', 'اسم المستفيد', 'صلة القرابة', 'المواليد', 'رقم البطاقة', 'الحالة', 'إجراءات'];
+    : [...['الصورة'], ...(isTpa ? ['الجهة'] : []), 'التسلسل', 'الرقم الوظيفي', 'اسم الموظف', 'اسم المستفيد', 'صلة القرابة', 'المواليد', 'رقم البطاقة', 'الحالة', 'إجراءات'];
   const row = (m) => (
     <Row key={m.id} m={m} cols={cols} flat={!grouped} isTpa={isTpa} selected={sel.has(m.id)} selectable={canSelect(m)}
       onToggle={() => onToggle(m)} onApprove={onApprove} onEdit={onEdit} onReturn={onReturn} />
@@ -585,6 +585,7 @@ function Table({ sort, onSort, isTpa, grouped, data, sel, canSelect, allVisSel, 
                     </div>
                     <div className="flex flex-wrap items-baseline gap-x-[18px] gap-y-1 px-3 py-2 min-w-0">
                       {isTpa && <span className="inline-flex h-[26px] items-center px-2.5 rounded-lg bg-[#F2F4F7] text-xs font-semibold">{f.entity}</span>}
+                      {f.listBatch && <span className="inline-flex h-[26px] items-center px-2.5 rounded-lg bg-[#EEF4FF] text-[#1D4ED8] text-xs font-semibold">الدفعة {f.listBatch}</span>}
                       <span className="flex items-baseline gap-1.5"><span className="text-xs text-[#5B6475]">الرقم الوظيفي</span><span dir="ltr" className="font-mono font-medium">{f.jobNo || '—'}</span></span>
                       <span className="flex items-baseline gap-1.5"><span className="text-xs text-[#5B6475]">اسم الموظف</span><span className="font-bold">{f.employeeName || '—'}</span></span>
                       <span className="text-[#5B6475]">{membersLabel(f.members.length)}</span>
@@ -608,6 +609,17 @@ function Table({ sort, onSort, isTpa, grouped, data, sel, canSelect, allVisSel, 
   );
 }
 
+// التسلسل العام، والدفعة مع التسلسل فيها (مفتاح ربط الصور بأصحابها).
+function BatchSerial({ m }) {
+  if (!m.listBatch) return <span className="text-[#98A2B3]">—</span>;
+  return (
+    <span className="inline-flex flex-col leading-tight">
+      {m.seq != null && <span dir="ltr" className="font-mono text-[14px] font-bold text-[#101828] text-right">{m.seq}</span>}
+      <span className="text-[11px] text-[#5B6475]">د{m.listBatch}{m.serial != null && ` · ${m.serial}`}</span>
+    </span>
+  );
+}
+
 function Row({ m, cols, flat, isTpa, selected, selectable, onToggle, onApprove, onEdit, onReturn }) {
   const changed = (k) => m.prev[k] !== undefined;
   return (
@@ -615,10 +627,12 @@ function Row({ m, cols, flat, isTpa, selected, selectable, onToggle, onApprove, 
       <div className="flex justify-center"><Checkbox checked={selected} disabled={!selectable} onChange={onToggle} label={`تحديد ${m.name}`} /></div>
       <div className="px-3 py-1.5"><Photo m={m} /></div>
       {flat && isTpa && <div className="px-3"><span className="inline-flex h-[26px] items-center px-2.5 rounded-lg bg-[#F2F4F7] text-xs font-semibold whitespace-nowrap">{m.entity}</span></div>}
+      {flat && <div className="px-3"><BatchSerial m={m} /></div>}
       {flat && <div className="px-3"><span dir="ltr" className="font-mono text-[13px] text-[#344054]">{m.jobNo || '—'}</span></div>}
       {flat && <div className="px-3 text-[#344054]">{m.employeeName || '—'}</div>}
       <div className="px-3 py-1.5 min-w-0 flex flex-col gap-1">
         <span className="flex flex-wrap items-center gap-1.5">
+          {!flat && m.serial != null && <span dir="ltr" title={`الدفعة ${m.listBatch} · التسلسل فيها ${m.serial}`} className="font-mono text-[12px] text-[#5B6475]">#{m.seq ?? m.serial}</span>}
           <span className={`font-semibold ${changed('name') ? 'text-[#1D4ED8]' : ''}`}>{m.name}</span>
           {m.benStatus && m.benStatus !== 'نشط' && (
             <span className={`inline-flex h-5 items-center px-1.5 rounded text-[11px] font-bold ${m.benStatus === 'موقوف' ? 'bg-[#FEECEB] text-[#B42318]' : 'bg-[#EEF1F5] text-[#475467]'}`}>{m.benStatus}</span>
