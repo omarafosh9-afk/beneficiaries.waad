@@ -57,7 +57,7 @@ chown -R 1000:1000 /opt/beneficiaries-data
 ($remote -replace "`r", '') | ssh $Server 'bash -s'; Check 'الاستبدال على السيرفر'
 
 Write-Host '== 5/5 تحديث البرنامج وإعادة المستخدمين'
-ssh $Server "bash /opt/beneficiaries/deploy/server/update.sh && docker exec beneficiaries node --no-warnings scripts/keep-users.mjs /data/backups/server-$stamp.db"
+ssh $Server "bash /opt/beneficiaries/deploy/server/update.sh && docker exec -u node beneficiaries node --no-warnings scripts/keep-users.mjs /data/backups/server-$stamp.db && chown -R 1000:1000 /opt/beneficiaries-data && docker restart beneficiaries"
 Check 'التشغيل وإعادة المستخدمين'
 
 Remove-Item $tmp -Recurse -Force
