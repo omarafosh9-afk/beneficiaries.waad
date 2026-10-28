@@ -128,7 +128,7 @@ test('user management: create, set password, edit, deactivate, delete', async ()
   assert.ok(checkPassword(c.password, await hash()));
   const r = await U.setPassword(u.id);
   assert.ok(!checkPassword(c.password, await hash()) && checkPassword(r.password, await hash()));
-  assert.match(r.password, /^d{6}$/);
+  assert.match(r.password, /^\d{6}$/);
   await U.setPassword(u.id, 'abcd');
   assert.ok(checkPassword('abcd', await hash()));
   await assert.rejects(U.setPassword(u.id, 'ab'), /كلمة المرور/);
