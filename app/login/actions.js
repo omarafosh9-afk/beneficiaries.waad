@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation';
 import { getDb } from '../../lib/db.js';
 import { checkPassword, createSessionToken, SESSION_COOKIE, SESSION_DAYS } from '../../lib/session.js';
 
-const HOME = { tpa: '/tpa', entity: '/review', printer: '/review' };
+const HOME = { tpa: '/tpa', entity: '/review', printer: '/printer' };
 
 export async function login(prevState, formData) {
   const username = String(formData.get('username') || '').trim();

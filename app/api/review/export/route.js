@@ -13,13 +13,13 @@ const STATUS_AR = {
 export async function GET(request) {
   let user;
   try {
-    user = await requireUser(['tpa', 'entity']);
+    user = await requireUser(['tpa', 'entity', 'printer']);
   } catch (e) {
     return NextResponse.json({ error: e.message }, { status: e.status || 403 });
   }
   const { searchParams } = new URL(request.url);
   const rows = (await exportRows(filtersFrom(searchParams, user))).map((r) => ({
-    ...(user.role === 'tpa' ? { 'الجهة': r.entity } : {}),
+    ...(user.role !== 'entity' ? { 'الجهة': r.entity } : {}),
     'التسلسل العام': r.seq ?? '',
     'الدفعة': r.listBatch || '',
     'التسلسل في الدفعة': r.serial ?? '',

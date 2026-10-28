@@ -8,7 +8,7 @@ export const metadata = { title: 'مراجعة المستفيدين واعتما
 export default async function ReviewPage() {
   const user = await currentUser();
   if (!user) redirect('/login?next=/review');
-  if (user.role !== 'entity') redirect(user.role === 'tpa' ? '/tpa' : '/login');
+  if (user.role !== 'entity') redirect(user.role === 'tpa' ? '/tpa' : '/printer');
   return (
     <main className="min-h-screen bg-[#F4F6F9]">
       <div className="max-w-[1360px] mx-auto px-4 md:px-6 pt-4 pb-10 flex flex-col gap-3">

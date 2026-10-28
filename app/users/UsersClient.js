@@ -53,6 +53,7 @@ export default function UsersClient({ initialUsers, meId }) {
             <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} className={input}>
               <option value="entity">جهة عمل</option>
               <option value="tpa">شركة TPA</option>
+              <option value="printer">المطبعة</option>
             </select>
           </label>
           {form.role === 'entity' && (
