@@ -38,6 +38,8 @@ export default function ReviewBoard({ mode, user }) {
   const [benStatus, setBenStatus] = useState('');
   const [grouped, setGrouped] = useState(!isTpa);
   const [view, setView] = useState('table');
+  const narrow = useNarrow();
+  const shownView = narrow ? 'cards' : view;
   const [page, setPage] = useState(1);
   const [sort, setSort] = useState({ key: 'serial', dir: 'asc' });
   const [data, setData] = useState(null);
@@ -305,7 +307,7 @@ export default function ReviewBoard({ mode, user }) {
             <input type="checkbox" checked={grouped} onChange={() => setGrouped(!grouped)} className="w-[18px] h-[18px] m-0 accent-[#1D4ED8]" />
             تجميع حسب العائلة
           </label>
-          {!isTpa && (
+          {!narrow && (
             <div className="flex gap-0.5 p-0.5 border border-[#D5DCE6] rounded-xl bg-white">
               {[['table', 'جدول', 'table'], ['cards', 'كروت', 'grid']].map(([k, label, icon]) => (
                 <button key={k} type="button" onClick={() => setView(k)} aria-pressed={view === k}
@@ -348,7 +350,7 @@ export default function ReviewBoard({ mode, user }) {
           <p className="m-0 py-12 px-5 text-center text-[#5B6475]">لا توجد سجلات مطابقة للبحث أو الفلتر الحالي.</p>
         )}
 
-        {!!rows.length && view === 'table' && (
+        {!!rows.length && shownView === 'table' && (
           <Table
             sort={sort} onSort={(key) => setSort((s) => ({ key, dir: s.key === key && s.dir === 'asc' ? 'desc' : 'asc' }))}
             isTpa={isTpa} grouped={!!data.families} data={data} sel={sel} canSelect={canSelect}
@@ -360,9 +362,28 @@ export default function ReviewBoard({ mode, user }) {
             onReturn={(m) => setDialog({ kind: 'return', member: m, note: '' })}
           />
         )}
-        {!!rows.length && view === 'cards' && !isTpa && (
-          <div className="grid gap-4 p-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(240px, 100%), 1fr))' }}>
-            {rows.map((m) => (
+        {!!rows.length && shownView === 'cards' && (
+          <div className="grid gap-3 p-3 md:gap-4 md:p-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(240px, 100%), 1fr))' }}>
+            {rows.map((m) => narrow ? (
+              // الجوال: بطاقة أفقية مضغوطة (الصورة بجانب البيانات).
+              <article key={m.id} className={`border rounded-xl p-2.5 flex gap-3 ${sel.has(m.id) ? 'border-[#8FB0EE] bg-[#F5F8FF]' : 'border-[#E3E8EF] bg-white'}`}>
+                <div className="flex flex-col items-center gap-2 shrink-0">
+                  <Photo m={m} size="md" />
+                  <Checkbox checked={sel.has(m.id)} disabled={!canSelect(m)} onChange={() => toggle([m.id], !sel.has(m.id))} label={`تحديد ${m.name}`} />
+                </div>
+                <div className="flex-1 min-w-0 flex flex-col gap-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <span className={`font-bold leading-snug ${m.prev.name !== undefined ? 'text-[#1D4ED8]' : ''}`}>{m.name}</span>
+                    {m.seq != null && <span dir="ltr" className="font-mono text-xs text-[#5B6475] shrink-0">#{m.seq}</span>}
+                  </div>
+                  <span className="text-[13px] text-[#5B6475]">{relLabel(m.relation)} · <span dir="ltr">{dobText(m.dob) || 'بلا مواليد'}</span></span>
+                  <span className="text-xs text-[#5B6475]">{isTpa ? `${m.entity} · ` : ''}الرقم الوظيفي <span dir="ltr">{m.jobNo || '—'}</span></span>
+                  <div><StatusBadge status={m.status} small /></div>
+                  {m.status === 'needs_edit' && m.note && <span className="text-xs font-semibold text-[#B54708]">ملاحظة TPA: {m.note}</span>}
+                  <RowActions m={m} isTpa={isTpa} onApprove={approveOne} onEdit={setEditing} onReturn={(x) => setDialog({ kind: 'return', member: x, note: '' })} />
+                </div>
+              </article>
+            ) : (
               <article key={m.id} className={`border rounded-[14px] p-3.5 flex flex-col gap-2.5 ${sel.has(m.id) ? 'border-[#8FB0EE] bg-[#F5F8FF]' : 'border-[#E3E8EF] bg-white'}`}>
                 <div className="flex items-center justify-between">
                   <Checkbox checked={sel.has(m.id)} disabled={!canSelect(m)} onChange={() => toggle([m.id], !sel.has(m.id))} label={`تحديد ${m.name}`} />
@@ -375,7 +396,8 @@ export default function ReviewBoard({ mode, user }) {
                   <span className="text-xs text-[#5B6475]">الرقم الوظيفي {m.jobNo || '—'}</span>
                 </div>
                 {m.status === 'needs_edit' && m.note && <span className="text-xs font-semibold text-[#B54708] text-center">ملاحظة TPA: {m.note}</span>}
-                <RowActions m={m} isTpa={false} onApprove={approveOne} onEdit={setEditing} />
+                {isTpa && <span className="text-xs text-center text-[#5B6475]">{m.entity}{m.seq != null ? ` · التسلسل ${m.seq}` : ''}</span>}
+                <div className="flex justify-center"><RowActions m={m} isTpa={isTpa} onApprove={approveOne} onEdit={setEditing} onReturn={(x) => setDialog({ kind: 'return', member: x, note: '' })} /></div>
               </article>
             ))}
           </div>
@@ -538,17 +560,17 @@ function Batches({ batches }) {
 }
 
 const COLS = {
-  entityGrouped: '56px 84px minmax(220px,2fr) minmax(96px,.8fr) minmax(120px,.9fr) minmax(150px,1fr) minmax(200px,1.2fr)',
-  entityFlat: '56px 84px 96px 104px minmax(170px,1.4fr) minmax(190px,1.6fr) 96px 120px minmax(140px,1fr) minmax(190px,1.1fr)',
-  tpaGrouped: '56px 84px minmax(220px,2fr) minmax(96px,.8fr) minmax(120px,.9fr) minmax(170px,1fr) 230px',
-  tpaFlat: '56px 84px 92px 96px 96px minmax(160px,1.3fr) minmax(180px,1.5fr) 88px 116px minmax(170px,1fr) 230px',
+  entityGrouped: '44px 72px minmax(170px,2fr) 84px 104px minmax(130px,1fr) 160px',
+  entityFlat: '44px 72px 72px 80px minmax(120px,1fr) minmax(140px,1.3fr) 72px 96px minmax(120px,1fr) 160px',
+  tpaGrouped: '44px 72px minmax(170px,2fr) 84px 104px minmax(130px,1fr) 160px',
+  tpaFlat: '44px 72px 76px 72px 76px minmax(110px,1fr) minmax(130px,1.2fr) 68px 96px minmax(120px,1fr) 160px',
 };
 
 const SORTABLE = { 'التسلسل': 'serial', 'الرقم الوظيفي': 'job', 'اسم الموظف': 'employee', 'اسم المستفيد': 'name' };
 
 function Table({ sort, onSort, isTpa, grouped, data, sel, canSelect, allVisSel, noneSelectable, onToggleAll, onToggle, onToggleFamily, onApproveFamily, onApprove, onEdit, onReturn }) {
   const cols = COLS[(isTpa ? 'tpa' : 'entity') + (grouped ? 'Grouped' : 'Flat')];
-  const minW = grouped ? 1080 : 1380;
+  const minW = grouped ? 820 : 1120;
   const head = grouped
     ? ['الصورة', 'اسم المستفيد', 'صلة القرابة', 'المواليد', 'الحالة', 'إجراءات']
     : [...['الصورة'], ...(isTpa ? ['الجهة'] : []), 'التسلسل', 'الرقم الوظيفي', 'اسم الموظف', 'اسم المستفيد', 'صلة القرابة', 'المواليد', 'الحالة', 'إجراءات'];
@@ -566,10 +588,10 @@ function Table({ sort, onSort, isTpa, grouped, data, sel, canSelect, allVisSel, 
           {head.map((h) => {
             // في العرض المجمّع يرتّب «اسم المستفيد» العائلات حسب اسم الموظف.
             const key = SORTABLE[h];
-            if (!key) return <div key={h} className="px-3">{h}</div>;
+            if (!key) return <div key={h} className="px-2">{h}</div>;
             const on = sort.key === key || (grouped && key === 'name' && sort.key === 'employee');
             return (
-              <div key={h} className="px-1.5" aria-sort={on ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'}>
+              <div key={h} className="px-1" aria-sort={on ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'}>
                 <button type="button" onClick={() => onSort(key)} title="فرز حسب هذا العمود"
                   className={`inline-flex items-center gap-1 h-8 px-1.5 rounded-md hover:bg-[#EEF1F5] font-semibold ${on ? 'text-[#1D4ED8]' : ''}`}>
                   {h}
@@ -630,17 +652,30 @@ function BatchSerial({ m }) {
   );
 }
 
+// شاشة ضيقة (جوال): أقل من 768 بكسل.
+function useNarrow() {
+  const [narrow, setNarrow] = useState(false);
+  useEffect(() => {
+    const q = window.matchMedia('(max-width: 767px)');
+    const on = () => setNarrow(q.matches);
+    on();
+    q.addEventListener('change', on);
+    return () => q.removeEventListener('change', on);
+  }, []);
+  return narrow;
+}
+
 function Row({ m, cols, flat, isTpa, selected, selectable, onToggle, onApprove, onEdit, onReturn }) {
   const changed = (k) => m.prev[k] !== undefined;
   return (
     <div className={`grid items-center min-h-[60px] border-b border-[#EEF1F5] ${selected ? 'bg-[#F5F8FF]' : 'bg-white'}`} style={{ gridTemplateColumns: cols }}>
       <div className="flex justify-center"><Checkbox checked={selected} disabled={!selectable} onChange={onToggle} label={`تحديد ${m.name}`} /></div>
-      <div className="px-3 py-1.5"><Photo m={m} /></div>
-      {flat && isTpa && <div className="px-3"><span className="inline-flex h-[26px] items-center px-2.5 rounded-lg bg-[#F2F4F7] text-xs font-semibold whitespace-nowrap">{m.entity}</span></div>}
-      {flat && <div className="px-3"><BatchSerial m={m} /></div>}
-      {flat && <div className="px-3"><span dir="ltr" className="font-mono text-[13px] text-[#344054]">{m.jobNo || '—'}</span></div>}
-      {flat && <div className="px-3 text-[#344054]">{m.employeeName || '—'}</div>}
-      <div className="px-3 py-1.5 min-w-0 flex flex-col gap-1">
+      <div className="px-2 py-1.5"><Photo m={m} /></div>
+      {flat && isTpa && <div className="px-2"><span className="inline-flex h-[26px] items-center px-2.5 rounded-lg bg-[#F2F4F7] text-xs font-semibold whitespace-nowrap">{m.entity}</span></div>}
+      {flat && <div className="px-2"><BatchSerial m={m} /></div>}
+      {flat && <div className="px-2"><span dir="ltr" className="font-mono text-[13px] text-[#344054]">{m.jobNo || '—'}</span></div>}
+      {flat && <div className="px-2 text-[13px] text-[#344054]">{m.employeeName || '—'}</div>}
+      <div className="px-2 py-1.5 min-w-0 flex flex-col gap-1">
         <span className="flex flex-wrap items-center gap-1.5">
           {!flat && m.serial != null && <span dir="ltr" title={`الدفعة ${m.listBatch} · التسلسل فيها ${m.serial}`} className="font-mono text-[12px] text-[#5B6475]">#{m.seq ?? m.serial}</span>}
           <span className={`font-semibold ${changed('name') ? 'text-[#1D4ED8]' : ''}`}>{m.name}</span>
@@ -654,11 +689,11 @@ function Row({ m, cols, flat, isTpa, selected, selectable, onToggle, onApprove, 
         )}
         {m.status === 'modified' && m.reason && <span className="text-xs text-[#1D4ED8]">سبب التعديل: {m.reason}</span>}
       </div>
-      <div className="px-3 py-1.5 flex flex-col gap-0.5">
+      <div className="px-2 py-1.5 flex flex-col gap-0.5 text-[13px]">
         <span className={changed('relation') ? 'text-[#1D4ED8]' : 'text-[#344054]'}>{relLabel(m.relation)}</span>
         {changed('relation') && <Prev value={relLabel(m.prev.relation)} />}
       </div>
-      <div className="px-3 py-1.5 flex flex-col items-start gap-0.5">
+      <div className="px-2 py-1.5 flex flex-col items-start gap-0.5 text-[13px]">
         {m.dob ? (
           <span dir="ltr" className={`tabular-nums ${changed('dob') ? 'text-[#1D4ED8]' : 'text-[#344054]'}`}>{dobText(m.dob)}</span>
         ) : (
@@ -667,7 +702,7 @@ function Row({ m, cols, flat, isTpa, selected, selectable, onToggle, onApprove, 
         {/^\d{4}$/.test(m.dob) && <span className="text-xs text-[#5B6475]">سنة فقط</span>}
         {changed('dob') && <Prev value={dobText(m.prev.dob)} ltr />}
       </div>
-      <div className="px-3 py-1.5 flex flex-col items-start gap-1">
+      <div className="px-2 py-1.5 flex flex-col items-start gap-1">
         <StatusBadge status={m.status} />
         {m.batch && <span className="text-xs text-[#5B6475]">دفعة الطباعة {m.batch}</span>}
         {!isTpa && m.status === 'pending' && missingOf(m).length > 0 && (
@@ -677,7 +712,7 @@ function Row({ m, cols, flat, isTpa, selected, selectable, onToggle, onApprove, 
           <span className="text-xs font-semibold text-[#B54708]">غير جاهز: {!m.photoUrl ? 'بلا صورة' : 'المواليد ناقصة'}</span>
         )}
       </div>
-      <div className="px-3 py-1.5"><RowActions m={m} isTpa={isTpa} onApprove={onApprove} onEdit={onEdit} onReturn={onReturn} /></div>
+      <div className="px-2 py-1.5"><RowActions m={m} isTpa={isTpa} onApprove={onApprove} onEdit={onEdit} onReturn={onReturn} /></div>
     </div>
   );
 }
@@ -688,29 +723,29 @@ function RowActions({ m, isTpa, onApprove, onEdit, onReturn }) {
   }
   if (isTpa) {
     return (
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-1.5">
         {m.status === 'pending' && (
           <button type="button" onClick={() => onApprove(m)} className={`${btn.approve} disabled:opacity-40 disabled:cursor-not-allowed`}
-            disabled={missingOf(m).length > 0} title={missingOf(m).length ? `لا يمكن الاعتماد: ينقصه ${missingOf(m).join(' و')}` : undefined}><Icon name="check" size={16} strokeWidth={2.4} />صحيح</button>
+            disabled={missingOf(m).length > 0} title={missingOf(m).length ? `لا يمكن الاعتماد: ينقصه ${missingOf(m).join(' و')}` : undefined}><Icon name="check" size={14} strokeWidth={2.4} />صحيح</button>
         )}
-        <button type="button" onClick={() => onEdit(m)} className="inline-flex items-center gap-1 h-8 px-2.5 rounded-lg text-[13px] border border-[#D5DCE6] bg-white hover:bg-[#F2F4F7] text-[#344054] font-semibold">
-          <Icon name="pencil" size={16} />تعديل
+        <button type="button" onClick={() => onEdit(m)} className={btn.edit}>
+          <Icon name="pencil" size={14} />تعديل
         </button>
         {(m.status === 'correct' || m.status === 'modified') && (
-          <button type="button" onClick={() => onReturn(m)} className={btn.warn}><Icon name="undo" size={16} />إعادة للتعديل</button>
+          <button type="button" onClick={() => onReturn(m)} className={btn.warn}><Icon name="undo" size={14} />إعادة</button>
         )}
       </div>
     );
   }
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center gap-1.5">
       {m.status === 'pending' && (
         <button type="button" onClick={() => onApprove(m)} className={`${btn.approve} disabled:opacity-40 disabled:cursor-not-allowed`}
-          disabled={missingOf(m).length > 0} title={missingOf(m).length ? `لا يمكن الاعتماد: ينقصه ${missingOf(m).join(' و')}` : undefined}><Icon name="check" size={16} strokeWidth={2.4} />صحيح</button>
+          disabled={missingOf(m).length > 0} title={missingOf(m).length ? `لا يمكن الاعتماد: ينقصه ${missingOf(m).join(' و')}` : undefined}><Icon name="check" size={14} strokeWidth={2.4} />صحيح</button>
       )}
       <button type="button" onClick={() => onEdit(m)}
-        className={`inline-flex items-center gap-1 h-8 px-2.5 rounded-lg text-[13px] border bg-white hover:bg-[#F2F4F7] font-semibold ${m.status === 'needs_edit' ? 'border-[#F0B27A] text-[#B54708]' : 'border-[#D5DCE6] text-[#344054]'}`}>
-        <Icon name="pencil" size={16} />تعديل
+        className={`${btn.edit} ${m.status === 'needs_edit' ? '!border-[#F0B27A] !text-[#B54708]' : ''}`}>
+        <Icon name="pencil" size={14} />تعديل
       </button>
     </div>
   );

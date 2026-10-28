@@ -162,9 +162,9 @@ export function Icon({ name, size = 18, className = '', strokeWidth = 2 }) {
 export function StatusBadge({ status, small }) {
   const s = STATUS[status] || STATUS.pending;
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full font-bold whitespace-nowrap ${small ? 'h-7 px-2.5 text-xs' : 'h-7 px-2.5 text-xs'}`}
+    <span className={`inline-flex items-center gap-1 rounded-full font-bold whitespace-nowrap ${small ? 'h-6 px-2 text-[11px]' : 'h-6 px-2 text-[11px]'}`}
       style={{ background: s.bg, color: s.fg }}>
-      <Icon name={s.icon} size={15} strokeWidth={s.icon === 'check' ? 2.4 : 2} />
+      <Icon name={s.icon} size={13} strokeWidth={s.icon === 'check' ? 2.4 : 2} />
       {s.label}
     </span>
   );
@@ -216,6 +216,7 @@ export function Dialog({ title, onClose, children, wide }) {
 export const btn = {
   primary: 'inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-[13px] bg-[#1D4ED8] hover:bg-[#1E40AF] text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed',
   ghost: 'inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-[13px] border border-[#D5DCE6] bg-white hover:bg-[#F2F4F7] text-[#344054] font-semibold disabled:opacity-50',
-  approve: 'inline-flex items-center gap-1 h-8 px-2.5 rounded-lg text-[13px] border border-[#A8D5B6] bg-white hover:bg-[#F2F4F7] text-[#126B33] font-semibold',
-  warn: 'inline-flex items-center gap-1 h-8 px-2.5 rounded-lg text-[13px] border border-[#F0B27A] bg-white hover:bg-[#F2F4F7] text-[#B54708] font-semibold whitespace-nowrap',
+  approve: 'inline-flex items-center gap-1 h-8 px-2 rounded-lg text-xs border border-[#A8D5B6] bg-white hover:bg-[#F2F4F7] text-[#126B33] font-semibold whitespace-nowrap',
+  warn: 'inline-flex items-center gap-1 h-8 px-2 rounded-lg text-xs border border-[#F0B27A] bg-white hover:bg-[#F2F4F7] text-[#B54708] font-semibold whitespace-nowrap',
+  edit: 'inline-flex items-center gap-1 h-8 px-2 rounded-lg text-xs border border-[#D5DCE6] bg-white hover:bg-[#F2F4F7] text-[#344054] font-semibold whitespace-nowrap',
 };

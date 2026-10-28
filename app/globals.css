@@ -87,3 +87,15 @@ body {
   font-family: "Tajawal", system-ui, "Segoe UI", Tahoma, sans-serif;
   font-size: 14px;
 }
+
+/* الجوال (آيفون وأندرويد): خط الحقول 16px حتى لا يكبّر Safari الصفحة عند الكتابة،
+   ومنع تكبير النص تلقائيًا عند تدوير الشاشة. */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+@media (max-width: 767px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
