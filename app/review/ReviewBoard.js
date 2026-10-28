@@ -689,6 +689,10 @@ function RowActions({ m, isTpa, onApprove, onEdit, onReturn }) {
   if (isTpa) {
     return (
       <div className="flex flex-wrap items-center gap-2">
+        {m.status === 'pending' && (
+          <button type="button" onClick={() => onApprove(m)} className={`${btn.approve} disabled:opacity-40 disabled:cursor-not-allowed`}
+            disabled={missingOf(m).length > 0} title={missingOf(m).length ? `لا يمكن الاعتماد: ينقصه ${missingOf(m).join(' و')}` : undefined}><Icon name="check" size={16} strokeWidth={2.4} />صحيح</button>
+        )}
         <button type="button" onClick={() => onEdit(m)} className="inline-flex items-center gap-1 h-8 px-2.5 rounded-lg text-[13px] border border-[#D5DCE6] bg-white hover:bg-[#F2F4F7] text-[#344054] font-semibold">
           <Icon name="pencil" size={16} />تعديل
         </button>

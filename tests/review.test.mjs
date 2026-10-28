@@ -115,7 +115,7 @@ test('legacy adapter round-trips without spurious changes', async () => {
   assert.equal((await B.getBeneficiary(6)).family_key, '999');
 });
 
-test('user management: create, reset password, deactivate', async () => {
+test('user management: create, set password, edit, deactivate, delete', async () => {
   const U = await import('../lib/users.js');
   const { checkPassword } = await import('../lib/session.js');
   await assert.rejects(U.createUser({ username: 'ab', displayName: 'x', role: 'tpa' }), /اسم المستخدم/);
@@ -126,9 +126,18 @@ test('user management: create, reset password, deactivate', async () => {
   assert.equal(u.entity, 'جليانة');
   const hash = async () => (await db.get('SELECT password_hash h FROM users WHERE id = ?', [u.id])).h;
   assert.ok(checkPassword(c.password, await hash()));
-  const r = await U.resetPassword(u.id);
+  const r = await U.setPassword(u.id);
   assert.ok(!checkPassword(c.password, await hash()) && checkPassword(r.password, await hash()));
+  assert.match(r.password, /^d{6}$/);
+  await U.setPassword(u.id, 'abcd');
+  assert.ok(checkPassword('abcd', await hash()));
+  await assert.rejects(U.setPassword(u.id, 'ab'), /كلمة المرور/);
+  await U.updateUser(u.id, { username: 'jal2', displayName: 'م', role: 'entity', entityId: 3 }, 999);
+  assert.equal((await U.listUsers()).find((x) => x.id === u.id).entity, 'الجمارك');
   await assert.rejects(U.setActive(u.id, false, u.id), /حسابك/);
   await U.setActive(u.id, false, 999);
   assert.equal((await U.listUsers()).find((x) => x.id === u.id).active, 0);
+  await assert.rejects(U.deleteUser(u.id, u.id), /حسابك/);
+  await U.deleteUser(u.id, 999);
+  assert.ok(!(await U.listUsers()).some((x) => x.id === u.id));
 });

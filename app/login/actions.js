@@ -3,7 +3,8 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getDb } from '../../lib/db.js';
-import { checkPassword, createSessionToken, SESSION_COOKIE, SESSION_DAYS } from '../../lib/session.js';
+import { checkPassword, SESSION_COOKIE } from '../../lib/session.js';
+import { startSession } from '../../lib/auth.js';
 
 const HOME = { tpa: '/tpa', entity: '/review', printer: '/printer' };
 
@@ -14,14 +15,7 @@ export async function login(prevState, formData) {
   if (!u || !checkPassword(password, u.password_hash)) {
     return { error: 'اسم المستخدم أو كلمة المرور غير صحيحة.' };
   }
-  const store = await cookies();
-  store.set(SESSION_COOKIE, createSessionToken(u.id), {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.COOKIE_SECURE === 'true',
-    path: '/',
-    maxAge: SESSION_DAYS * 86400,
-  });
+  await startSession(u.id, u.password_hash);
   const next = String(formData.get('next') || '');
   redirect(next.startsWith('/') && !next.startsWith('//') ? next : HOME[u.role] || '/review');
 }
