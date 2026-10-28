@@ -29,6 +29,7 @@ export default function AppHeader({ user, title, subtitle, active }) {
             <span className="font-semibold">{user.displayName}</span>
             <span className="text-xs text-[#5B6475]">{ROLE_LABELS[user.role]}{user.entityName ? ` · ${user.entityName}` : ''}</span>
           </span>
+          <Link href="/account" className="inline-flex items-center h-8 px-2.5 rounded-lg text-[13px] font-semibold text-[#344054] hover:bg-[#F2F4F7]">كلمة المرور</Link>
           <form action={logout}>
             <button type="submit" className="h-8 px-2.5 rounded-lg text-[13px] font-semibold text-[#B42318] hover:bg-[#FEECEB]">خروج</button>
           </form>

@@ -20,8 +20,8 @@ if (!username || !password || !['tpa', 'entity', 'printer'].includes(role)) {
   console.error('الاستخدام: --username U --password P --role tpa|entity|printer [--entity Cement|Jalyana|Jamarek] [--name "الاسم"]');
   process.exit(1);
 }
-if (password.length < 8) {
-  console.error('كلمة المرور 8 أحرف على الأقل.');
+if (password.length < 4) {
+  console.error('كلمة المرور 4 أحرف على الأقل.');
   process.exit(1);
 }
 const entityId = role === 'entity' ? ENTITY_IDS[entity] : null;
