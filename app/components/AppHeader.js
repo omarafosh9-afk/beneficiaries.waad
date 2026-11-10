@@ -5,7 +5,7 @@ import { ROLE_LABELS } from '../../lib/auth.js';
 
 export default function AppHeader({ user, title, subtitle, active }) {
   const links = user.role === 'tpa'
-    ? [['/tpa', 'المراجعة والترحيل'], ['/', 'البحث والصور'], ['/printer', 'رفع الصور'], ['/users', 'المستخدمون']]
+    ? [['/tpa', 'المراجعة والترحيل'], ['/', 'البحث والصور'], ['/printer', 'رفع الصور'], ['/companies', 'الجهات والاستيراد'], ['/users', 'المستخدمون']]
     : user.role === 'printer' ? [['/printer', 'رفع الصور']] : [];
   return (
     <header className="flex flex-wrap items-center justify-between gap-4">

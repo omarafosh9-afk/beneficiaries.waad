@@ -14,18 +14,13 @@ import {
 import EditDrawer from './EditDrawer';
 import AddDrawer from './AddDrawer';
 
-const ENTITIES = [
-  { id: 1, name: 'الاسمنت' },
-  { id: 2, name: 'جليانة' },
-  { id: 3, name: 'الجمارك' },
-];
 const TABS = {
   entity: ['all', 'pending', 'needs_edit', 'correct', 'modified', 'forwarded'],
   tpa: ['all', 'pending', 'needs_edit', 'modified', 'correct', 'ready', 'forwarded', 'printed', 'delivered'],
 };
 const READY_TAB = { label: 'جاهز للترحيل', bg: '#E7F6EC', fg: '#126B33' };
 
-export default function ReviewBoard({ mode, user }) {
+export default function ReviewBoard({ mode, user, entities: ENTITIES = [] }) {
   const isTpa = mode === 'tpa';
   const fixedEntity = user.role === 'entity' ? user.entityId : null;
   const [entity, setEntity] = useState(fixedEntity || 2);
@@ -62,7 +57,7 @@ export default function ReviewBoard({ mode, user }) {
     if (fixedEntity) return;
     try {
       const v = Number(localStorage.getItem('review.entity'));
-      if ([1, 2, 3].includes(v)) setEntity(v);
+      if (ENTITIES.some((e) => e.id === v)) setEntity(v);
     } catch {}
   }, [fixedEntity, isTpa]);
 

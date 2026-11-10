@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { currentUser } from '../../lib/auth.js';
 import AppHeader from '../components/AppHeader';
 import ReviewBoard from './ReviewBoard';
+import { entityOptions } from '../../lib/entities.js';
 
 export const metadata = { title: 'مراجعة المستفيدين واعتمادهم' };
 
@@ -14,7 +15,7 @@ export default async function ReviewPage() {
       <div className="max-w-[1360px] mx-auto px-4 md:px-6 pt-4 pb-10 flex flex-col gap-3">
         <AppHeader user={user} active="/review" title="قائمة المستفيدين"
           subtitle={`مراجعة بيانات المستفيدين واعتمادها${user.entityName ? ` · جهة العمل: ${user.entityName}` : ''}`} />
-        <ReviewBoard mode="entity" user={user} />
+        <ReviewBoard mode="entity" user={user} entities={entityOptions()} />
       </div>
     </main>
   );

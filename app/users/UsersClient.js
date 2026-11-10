@@ -4,15 +4,10 @@ import { useState } from 'react';
 import { createUserAction, updateUserAction, setPasswordAction, setActiveAction, deleteUserAction } from './actions';
 import { btn, Dialog, Icon } from '../review/ui';
 
-const ENTITIES = [
-  { id: 1, name: 'الاسمنت' },
-  { id: 2, name: 'جليانة' },
-  { id: 3, name: 'الجمارك' },
-];
 const ROLE_AR = { tpa: 'شركة TPA', entity: 'جهة عمل', printer: 'المطبعة' };
 const input = 'h-11 px-3 border border-[#D5DCE6] rounded-[10px] bg-white font-normal';
 
-export default function UsersClient({ initialUsers, meId }) {
+export default function UsersClient({ initialUsers, meId, entities: ENTITIES = [] }) {
   const [users, setUsers] = useState(initialUsers);
   const [form, setForm] = useState({ username: '', displayName: '', role: 'entity', entityId: 2, password: '' });
   const [dialog, setDialog] = useState(null); // { kind: edit | password | delete, user, ...الحقول }
