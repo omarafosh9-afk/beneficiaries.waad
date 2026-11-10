@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { createEntityAction, previewImportAction, applyImportAction } from './actions';
+import { createEntityAction, renameEntityAction, deleteEntityAction, previewImportAction, applyImportAction } from './actions';
 import { btn, Icon } from '../review/ui';
 
 const input = 'h-11 px-3 border border-[#D5DCE6] rounded-[10px] bg-white font-normal';
@@ -12,6 +12,7 @@ export default function CompaniesClient({ initialEntities }) {
   const [form, setForm] = useState({ name: '', code: '' });
   const [msg, setMsg] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [editing, setEditing] = useState(null);
 
   const [entityId, setEntityId] = useState('');
   const [file, setFile] = useState(null);
@@ -28,6 +29,27 @@ export default function CompaniesClient({ initialEntities }) {
     setEntities(r.entities);
     setForm({ name: '', code: '' });
     setMsg({ ok: `أُضيفت الجهة «${r.created.name}». أنشئ لها حسابًا من صفحة المستخدمين.` });
+  }
+
+  async function saveName(e) {
+    e.preventDefault();
+    setBusy(true);
+    const r = await renameEntityAction(editing.id, editing.name);
+    setBusy(false);
+    if (!r.ok) return setMsg({ error: r.error });
+    setEntities(r.entities);
+    setEditing(null);
+    setMsg({ ok: `تم تعديل الاسم إلى «${r.renamed.name}».` });
+  }
+
+  async function remove(x) {
+    if (!window.confirm(`حذف الجهة «${x.name}»؟`)) return;
+    setBusy(true);
+    const r = await deleteEntityAction(x.id);
+    setBusy(false);
+    if (!r.ok) return setMsg({ error: r.error });
+    setEntities(r.entities);
+    setMsg({ ok: `حُذفت الجهة «${x.name}».` });
   }
 
   function fd() {
@@ -72,16 +94,37 @@ export default function CompaniesClient({ initialEntities }) {
                 <th className="py-2 px-2 font-semibold">المستفيدون</th>
                 <th className="py-2 px-2 font-semibold">بصورة</th>
                 <th className="py-2 px-2 font-semibold">الدفعات</th>
+                <th className="py-2 px-2" />
               </tr>
             </thead>
             <tbody>
               {entities.map((x) => (
                 <tr key={x.id} className="border-b border-[#F0F2F5]">
-                  <td className="py-2 px-2 font-semibold">{x.name}</td>
+                  <td className="py-2 px-2 font-semibold">
+                    {editing?.id === x.id ? (
+                      <form onSubmit={saveName} className="flex items-center gap-1.5">
+                        <input autoFocus className={`${input} h-9`} value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} />
+                        <button type="submit" disabled={busy} className={btn.approve}>حفظ</button>
+                        <button type="button" onClick={() => setEditing(null)} className={btn.edit}>إلغاء</button>
+                      </form>
+                    ) : x.name}
+                  </td>
                   <td className="py-2 px-2 font-mono" dir="ltr">{x.code}</td>
                   <td className="py-2 px-2">{x.count}</td>
                   <td className="py-2 px-2">{x.photos}</td>
                   <td className="py-2 px-2">{x.batches}</td>
+                  <td className="py-2 px-2">
+                    <div className="flex justify-end gap-1.5">
+                      <button type="button" onClick={() => setEditing({ id: x.id, name: x.name })} className={btn.edit}>
+                        <Icon name="pencil" size={14} />تعديل
+                      </button>
+                      {!x.count && (
+                        <button type="button" disabled={busy} onClick={() => remove(x)} className={btn.warn}>
+                          <Icon name="x" size={14} />حذف
+                        </button>
+                      )}
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>

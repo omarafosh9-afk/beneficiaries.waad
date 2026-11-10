@@ -1,7 +1,7 @@
 'use server';
 
 import { requireUser, actorName } from '../../lib/auth.js';
-import { createEntity, listEntities } from '../../lib/entities.js';
+import { createEntity, renameEntity, deleteEntity, listEntities } from '../../lib/entities.js';
 import { previewImport, applyImport } from '../../lib/beneficiary-import.js';
 
 // إدارة الجهات والاستيراد لـ TPA فقط.
@@ -22,6 +22,14 @@ async function fileBytes(formData) {
 
 export async function createEntityAction(input) {
   return guard(async () => ({ created: await createEntity(input) }));
+}
+
+export async function renameEntityAction(id, name) {
+  return guard(async () => ({ renamed: await renameEntity(id, name) }));
+}
+
+export async function deleteEntityAction(id) {
+  return guard(async () => deleteEntity(id));
 }
 
 export async function previewImportAction(formData) {
