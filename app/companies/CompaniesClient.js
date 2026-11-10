@@ -108,7 +108,7 @@ export default function CompaniesClient({ initialEntities }) {
           <a href="/api/companies/template" className={btn.ghost}><Icon name="download" size={16} />تحميل القالب</a>
         </div>
         <p className="m-0 text-[13px] text-[#5B6475]">
-          عبّئ القالب (التسلسل، الرقم الوظيفي، الاسم، صلة القرابة، تاريخ الميلاد، الرقم الوطني) ثم ارفعه. كل ملف يُضاف كدفعة جديدة للجهة،
+          عبّئ القالب ثم ارفعه؛ الاسم وحده إلزامي. صلة القرابة والعائلة تُستخلصان من رقم البطاقة إن وُجد (ولا يُحفظ الرقم). كل ملف يُضاف كدفعة جديدة للجهة،
           والتسلسل العام يكمل بعد آخر تسلسل. تظهر معاينة قبل الحفظ، والمكرر يُتخطى تلقائيًا.
         </p>
         <form onSubmit={runPreview} className="flex flex-wrap items-end gap-2.5">
