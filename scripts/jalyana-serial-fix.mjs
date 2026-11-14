@@ -70,6 +70,8 @@ const passes = [
   }],
   ['الاسم نفسه', (p) => familyOf(p.job).filter((r) => compact(r.name) === compact(p.name))],
   ['اسم مقطوع', (p) => familyOf(p.job).filter((r) => !listedElse(p, r) && (compact(r.name).startsWith(compact(p.name)) || compact(p.name).startsWith(compact(r.name))))],
+  // يحمل التسلسل نفسه وبالاسم الأول نفسه = الشخص نفسه وقد أكمل المدقق اسمه.
+  ['التسلسل والاسم الأول', (p) => familyOf(p.job).filter((r) => holds(r, p) && !listedElse(p, r) && first(r.name) === first(p.name))],
   ['اسم مشابه', (p) => {
     const c = familyOf(p.job).filter((r) => !used.has(r.id) && !listedElse(p, r) && first(r.name) === first(p.name)).map((r) => [score(r.name, p.name), r]).filter(([s]) => s >= 0.6).sort((a, b) => b[0] - a[0]);
     return c.length && (c.length === 1 || c[1][0] < c[0][0]) ? [c[0][1]] : [];
