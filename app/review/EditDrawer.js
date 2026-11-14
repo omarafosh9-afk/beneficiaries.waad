@@ -18,8 +18,8 @@ function toDmy(dob) {
   return m ? `${m[3]}/${m[2]}/${m[1]}` : dob || '';
 }
 
-export default function EditDrawer({ m, onClose, onSaved }) {
-  const [form, setForm] = useState({ name: m.name, jobNo: m.jobNo || '', relation: m.relation, dob: toDmy(m.dob), reason: '' });
+export default function EditDrawer({ m, isTpa, onClose, onSaved }) {
+  const [form, setForm] = useState({ name: m.name, jobNo: m.jobNo || '', relation: m.relation, dob: toDmy(m.dob), benStatus: m.benStatus || 'نشط', reason: '' });
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [error, setError] = useState('');
@@ -39,14 +39,14 @@ export default function EditDrawer({ m, onClose, onSaved }) {
     const fd = new FormData();
     fd.set('id', m.id);
     fd.set('version', m.version);
-    for (const k of ['name', 'jobNo', 'relation', 'dob', 'reason']) fd.set(k, form[k]);
+    for (const k of ['name', 'jobNo', 'relation', 'dob', 'reason', ...(isTpa ? ['benStatus'] : [])]) fd.set(k, form[k]);
     if (file) fd.set('photo', file);
     if (confirmMerge) fd.set('confirmMerge', '1');
     const r = await editAction(fd);
     setSaving(false);
     if (!r.ok) return setError(r.error);
     if (r.merge) return setMerge(r.merge);
-    onSaved(r.view);
+    onSaved(r.view, r.statusOnly);
   }
 
   return (
@@ -111,6 +111,15 @@ export default function EditDrawer({ m, onClose, onSaved }) {
                 className="h-10 px-3 border border-[#D5DCE6] rounded-[10px] font-normal text-left tabular-nums tracking-wide" />
             </label>
           </div>
+          {isTpa && (
+            <label className="flex flex-col gap-1.5 font-semibold text-[#344054]">
+              حالة المستفيد
+              <select value={form.benStatus} onChange={set('benStatus')} className="h-10 px-3 border border-[#D5DCE6] rounded-[10px] bg-white font-normal">
+                {['نشط', 'موقوف', 'مكتمل'].map((x) => <option key={x} value={x}>{x}</option>)}
+              </select>
+              <span className="text-xs font-normal text-[#5B6475]">للإدارة فقط؛ تغييرها وحدها لا يجعل السجل «معدل».</span>
+            </label>
+          )}
           <label className="flex flex-col gap-1.5 font-semibold text-[#344054]">
             <span>سبب التعديل <span className="text-[#B42318]">*</span></span>
             <textarea rows={3} value={form.reason} onChange={set('reason')} maxLength={300}

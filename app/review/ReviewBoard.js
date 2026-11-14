@@ -508,9 +508,9 @@ export default function ReviewBoard({ mode, user, entities: ENTITIES = [] }) {
       )}
 
       {editing && (
-        <EditDrawer m={editing} onClose={() => setEditing(null)} onSaved={() => {
+        <EditDrawer m={editing} isTpa={isTpa} onClose={() => setEditing(null)} onSaved={(v, statusOnly) => {
           setEditing(null);
-          say(isTpa ? 'حُفظ التعديل وأصبحت الحالة «معدل»' : 'حُفظ التعديل وأصبحت الحالة «معدل»، وتراه شركة TPA مع القيمة القديمة');
+          say(statusOnly ? 'حُفظت حالة المستفيد' : isTpa ? 'حُفظ التعديل وأصبحت الحالة «معدل»' : 'حُفظ التعديل وأصبحت الحالة «معدل»، وتراه شركة TPA مع القيمة القديمة');
           reload();
         }} />
       )}

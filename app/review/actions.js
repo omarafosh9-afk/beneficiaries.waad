@@ -5,7 +5,7 @@ import { ENTITY_CODES, parseDob } from '../../lib/derive.js';
 import { preparePhoto, writePhoto } from '../../lib/photos.js';
 import { onCloudflare } from '../../lib/db.js';
 import {
-  approve, previewApproval, addBeneficiary, jobMergeInfo, softDelete, restoreDeleted, editBeneficiary, getBeneficiary, returnForEdit, previewForward, forward,
+  approve, previewApproval, addBeneficiary, jobMergeInfo, setBenStatus, softDelete, restoreDeleted, editBeneficiary, getBeneficiary, returnForEdit, previewForward, forward,
 } from '../../lib/beneficiaries.js';
 
 // target: { ids } أو { filter } (الفلتر نفسه المعروض، لتحديد «كل المطابق»).
@@ -76,26 +76,36 @@ export async function editAction(formData) {
       if (merge) return { merge };
     }
 
+    if (Number(formData.get('version')) !== b.version) throw new Error('عُدّل هذا السجل للتو من مكان آخر؛ حدّث الصفحة.');
+    // حالة المستفيد (نشط/موقوف/مكتمل) لـ TPA فقط؛ تُحفظ وحدها دون أن يصبح السجل «معدل».
+    const benStatus = String(formData.get('benStatus') || '');
+    let statusChanged = false;
+    if (benStatus && benStatus !== (b.legacy_status || 'نشط')) {
+      if (u.role !== 'tpa') throw new Error('تغيير حالة المستفيد للإدارة فقط.');
+      statusChanged = await setBenStatus(id, benStatus, formData.get('reason'), actorName(u));
+    }
+
     const photo = await readPhoto(formData);
     // الملف يُكتب أولا باسم جديد، ثم يُسجَّل في القاعدة؛ لو فشل التسجيل يبقى الملف القديم مستخدما.
     const photoFile = photo ? `${id}-${Date.now()}.webp` : null;
     if (photo) await writePhoto(ENTITY_CODES[b.entity_id], photoFile, photo);
-    const view = await editBeneficiary(
-      {
-        id,
-        version: formData.get('version'),
-        name: formData.get('name'),
-        jobNo: formData.get('jobNo'),
-        relation: formData.get('relation'),
-        dob,
-        reason: formData.get('reason'),
-        photoFile,
-        confirmMerge,
-      },
-      actorName(u),
-      entityScope(u)
-    );
-    return { view };
+    const args = {
+      id,
+      name: formData.get('name'),
+      jobNo: formData.get('jobNo'),
+      relation: formData.get('relation'),
+      dob,
+      reason: formData.get('reason'),
+      photoFile,
+      confirmMerge,
+    };
+    try {
+      return { view: await editBeneficiary({ ...args, version: b.version + (statusChanged ? 1 : 0) }, actorName(u), entityScope(u)) };
+    } catch (e) {
+      // تغيير الحالة وحدها: لا تعديل آخر.
+      if (statusChanged && e.message === 'لم يتغيّر شيء في البيانات.') return { view: null, statusOnly: true };
+      throw e;
+    }
   });
 }
 
