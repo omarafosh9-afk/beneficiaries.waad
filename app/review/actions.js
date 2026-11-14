@@ -5,7 +5,7 @@ import { ENTITY_CODES, parseDob } from '../../lib/derive.js';
 import { preparePhoto, writePhoto } from '../../lib/photos.js';
 import { onCloudflare } from '../../lib/db.js';
 import {
-  approve, previewApproval, addBeneficiary, editBeneficiary, getBeneficiary, returnForEdit, previewForward, forward,
+  approve, previewApproval, addBeneficiary, softDelete, restoreDeleted, editBeneficiary, getBeneficiary, returnForEdit, previewForward, forward,
 } from '../../lib/beneficiaries.js';
 
 // target: { ids } أو { filter } (الفلتر نفسه المعروض، لتحديد «كل المطابق»).
@@ -93,6 +93,14 @@ export async function editAction(formData) {
 }
 
 // ---------- عمليات شركة TPA ----------
+
+export async function deleteAction(id, reason) {
+  return guard(['tpa'], async (u) => ({ done: await softDelete(id, reason, actorName(u)) }));
+}
+
+export async function restoreAction(id) {
+  return guard(['tpa'], async (u) => ({ done: await restoreDeleted(id, actorName(u)) }));
+}
 
 export async function returnAction(id, note) {
   return guard(['tpa'], async (u) => ({ done: await returnForEdit(id, note, actorName(u)) }));

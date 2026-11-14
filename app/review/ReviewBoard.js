@@ -9,16 +9,17 @@ import {
   records, membersLabel, cardsLabel,
 } from './ui';
 import {
-  previewApprovalAction, approveAction, returnAction, previewForwardAction, forwardAction,
+  previewApprovalAction, approveAction, returnAction, deleteAction, restoreAction, previewForwardAction, forwardAction,
 } from './actions';
 import EditDrawer from './EditDrawer';
 import AddDrawer from './AddDrawer';
 
 const TABS = {
   entity: ['all', 'pending', 'needs_edit', 'correct', 'modified', 'forwarded'],
-  tpa: ['all', 'pending', 'needs_edit', 'modified', 'correct', 'ready', 'forwarded', 'printed', 'delivered'],
+  tpa: ['all', 'pending', 'needs_edit', 'modified', 'correct', 'ready', 'forwarded', 'printed', 'delivered', 'deleted'],
 };
 const READY_TAB = { label: 'جاهز للترحيل', bg: '#E7F6EC', fg: '#126B33' };
+const DELETED_TAB = { label: 'محذوف', bg: '#FEE4E2', fg: '#B42318' };
 
 export default function ReviewBoard({ mode, user, entities: ENTITIES = [] }) {
   const isTpa = mode === 'tpa';
@@ -124,7 +125,7 @@ export default function ReviewBoard({ mode, user, entities: ENTITIES = [] }) {
   const reload = () => setReloadKey((k) => k + 1);
 
   const rows = useMemo(() => (data ? (data.families ? data.families.flatMap((f) => f.members) : data.rows) : []), [data]);
-  const canSelect = useCallback((m) => (isTpa ? isReady(m) : !LOCKED.has(m.status)), [isTpa]);
+  const canSelect = useCallback((m) => !m.deleted && (isTpa ? isReady(m) : !LOCKED.has(m.status)), [isTpa]);
   const selectable = rows.filter(canSelect);
   const allVisSel = selectable.length > 0 && selectable.every((m) => sel.has(m.id));
 
@@ -179,6 +180,21 @@ export default function ReviewBoard({ mode, user, entities: ENTITIES = [] }) {
     say(`تم الترحيل للمطبعة: ${r.batches.map((b) => `دفعة ${b.id} (${b.entity}: ${cardsLabel(b.count)})`).join('، ')}`);
     reload();
   }
+  async function doDelete() {
+    const r = await deleteAction(dialog.member.id, dialog.note);
+    if (!r.ok) return setDialog({ ...dialog, error: r.error });
+    setDialog(null);
+    say(`حُذف ${dialog.member.name}؛ تجده في تبويب «محذوف» ويمكن استرجاعه`);
+    reload();
+  }
+
+  async function restoreOne(m) {
+    const r = await restoreAction(m.id);
+    if (!r.ok) return say(r.error);
+    say(`استُرجع ${m.name}`);
+    reload();
+  }
+
   async function doReturn() {
     const r = await returnAction(dialog.member.id, dialog.note);
     if (!r.ok) return setDialog({ ...dialog, error: r.error });
@@ -188,7 +204,7 @@ export default function ReviewBoard({ mode, user, entities: ENTITIES = [] }) {
   }
 
   const tabs = TABS[mode].map((k) => {
-    const meta = k === 'all' ? { label: 'الكل', bg: '#EEF1F5', fg: '#344054' } : k === 'ready' ? READY_TAB : STATUS[k];
+    const meta = k === 'all' ? { label: 'الكل', bg: '#EEF1F5', fg: '#344054' } : k === 'ready' ? READY_TAB : k === 'deleted' ? DELETED_TAB : STATUS[k];
     return { key: k, label: meta.label, soft: meta, count: data?.counts?.[k] ?? 0 };
   });
   const progress = data?.progress || { done: 0, total: 0 };
@@ -355,6 +371,7 @@ export default function ReviewBoard({ mode, user, entities: ENTITIES = [] }) {
             onApproveFamily={(f) => openApprove({ ids: f.members.filter((m) => !LOCKED.has(m.status)).map((m) => m.id) })}
             onApprove={approveOne} onEdit={setEditing}
             onReturn={(m) => setDialog({ kind: 'return', member: m, note: '' })}
+            onDelete={(m) => setDialog({ kind: 'delete', member: m, note: '' })} onRestore={restoreOne}
           />
         )}
         {!!rows.length && shownView === 'cards' && (
@@ -375,7 +392,7 @@ export default function ReviewBoard({ mode, user, entities: ENTITIES = [] }) {
                   <span className="text-xs text-[#5B6475]">{isTpa ? `${m.entity} · ` : ''}الرقم الوظيفي <span dir="ltr">{m.jobNo || '—'}</span></span>
                   <div><StatusBadge status={m.status} small /></div>
                   {m.status === 'needs_edit' && m.note && <span className="text-xs font-semibold text-[#B54708]">ملاحظة TPA: {m.note}</span>}
-                  <RowActions m={m} isTpa={isTpa} onApprove={approveOne} onEdit={setEditing} onReturn={(x) => setDialog({ kind: 'return', member: x, note: '' })} />
+                  <RowActions m={m} isTpa={isTpa} onApprove={approveOne} onEdit={setEditing} onReturn={(x) => setDialog({ kind: 'return', member: x, note: '' })} onDelete={(x) => setDialog({ kind: 'delete', member: x, note: '' })} onRestore={restoreOne} />
                 </div>
               </article>
             ) : (
@@ -392,7 +409,7 @@ export default function ReviewBoard({ mode, user, entities: ENTITIES = [] }) {
                 </div>
                 {m.status === 'needs_edit' && m.note && <span className="text-xs font-semibold text-[#B54708] text-center">ملاحظة TPA: {m.note}</span>}
                 {isTpa && <span className="text-xs text-center text-[#5B6475]">{m.entity}{m.seq != null ? ` · التسلسل ${m.seq}` : ''}</span>}
-                <div className="flex justify-center"><RowActions m={m} isTpa={isTpa} onApprove={approveOne} onEdit={setEditing} onReturn={(x) => setDialog({ kind: 'return', member: x, note: '' })} /></div>
+                <div className="flex justify-center"><RowActions m={m} isTpa={isTpa} onApprove={approveOne} onEdit={setEditing} onReturn={(x) => setDialog({ kind: 'return', member: x, note: '' })} onDelete={(x) => setDialog({ kind: 'delete', member: x, note: '' })} onRestore={restoreOne} /></div>
               </article>
             ))}
           </div>
@@ -460,6 +477,23 @@ export default function ReviewBoard({ mode, user, entities: ENTITIES = [] }) {
           {dialog.error && <p role="alert" className="m-0 text-[#B42318] font-semibold">{dialog.error}</p>}
           <div className="flex flex-wrap gap-2">
             <button type="button" onClick={doReturn} className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-[13px] bg-[#B54708] text-white font-semibold"><Icon name="undo" />إعادة مع الملاحظة</button>
+            <button type="button" className={btn.ghost} onClick={() => setDialog(null)}>إلغاء</button>
+          </div>
+        </Dialog>
+      )}
+
+      {dialog?.kind === 'delete' && (
+        <Dialog title="حذف مستفيد" onClose={() => setDialog(null)}>
+          <p className="m-0 text-[#344054]"><b>{dialog.member.name}</b> · {dialog.member.entity}</p>
+          <p className="m-0 text-[13px] text-[#5B6475]">حذف ناعم: يختفي من القوائم ومن جهة العمل، ويبقى في تبويب «محذوف» قابلًا للاسترجاع.</p>
+          <label className="flex flex-col gap-1.5 font-semibold text-[#344054]">
+            <span>سبب الحذف <span className="text-[#B42318]">*</span></span>
+            <textarea rows={2} value={dialog.note} maxLength={300} onChange={(e) => setDialog({ ...dialog, note: e.target.value, error: '' })}
+              placeholder="مثال: مكرر، أو ليس من منتسبي الجهة" className="px-3 py-1.5 border border-[#D5DCE6] rounded-[10px] font-normal" />
+          </label>
+          {dialog.error && <p role="alert" className="m-0 text-[#B42318] font-semibold">{dialog.error}</p>}
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={doDelete} className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-[13px] bg-[#B42318] text-white font-semibold"><Icon name="x" />حذف</button>
             <button type="button" className={btn.ghost} onClick={() => setDialog(null)}>إلغاء</button>
           </div>
         </Dialog>
@@ -563,7 +597,7 @@ const COLS = {
 
 const SORTABLE = { 'التسلسل': 'serial', 'الرقم الوظيفي': 'job', 'اسم الموظف': 'employee', 'اسم المستفيد': 'name' };
 
-function Table({ sort, onSort, isTpa, grouped, data, sel, canSelect, allVisSel, noneSelectable, onToggleAll, onToggle, onToggleFamily, onApproveFamily, onApprove, onEdit, onReturn }) {
+function Table({ sort, onSort, isTpa, grouped, data, sel, canSelect, allVisSel, noneSelectable, onToggleAll, onToggle, onToggleFamily, onApproveFamily, onApprove, onEdit, onReturn, onDelete, onRestore }) {
   const cols = COLS[(isTpa ? 'tpa' : 'entity') + (grouped ? 'Grouped' : 'Flat')];
   const minW = grouped ? 820 : 1120;
   const head = grouped
@@ -571,7 +605,7 @@ function Table({ sort, onSort, isTpa, grouped, data, sel, canSelect, allVisSel, 
     : [...['الصورة'], ...(isTpa ? ['الجهة'] : []), 'التسلسل', 'الرقم الوظيفي', 'اسم الموظف', 'اسم المستفيد', 'صلة القرابة', 'المواليد', 'الحالة', 'إجراءات'];
   const row = (m) => (
     <Row key={m.id} m={m} cols={cols} flat={!grouped} isTpa={isTpa} selected={sel.has(m.id)} selectable={canSelect(m)}
-      onToggle={() => onToggle(m)} onApprove={onApprove} onEdit={onEdit} onReturn={onReturn} />
+      onToggle={() => onToggle(m)} onApprove={onApprove} onEdit={onEdit} onReturn={onReturn} onDelete={onDelete} onRestore={onRestore} />
   );
   return (
     <div className="overflow-x-auto">
@@ -660,7 +694,7 @@ function useNarrow() {
   return narrow;
 }
 
-function Row({ m, cols, flat, isTpa, selected, selectable, onToggle, onApprove, onEdit, onReturn }) {
+function Row({ m, cols, flat, isTpa, selected, selectable, onToggle, onApprove, onEdit, onReturn, onDelete, onRestore }) {
   const changed = (k) => m.prev[k] !== undefined;
   return (
     <div className={`grid items-center min-h-[60px] border-b border-[#EEF1F5] ${selected ? 'bg-[#F5F8FF]' : 'bg-white'}`} style={{ gridTemplateColumns: cols }}>
@@ -707,12 +741,17 @@ function Row({ m, cols, flat, isTpa, selected, selectable, onToggle, onApprove, 
           <span className="text-xs font-semibold text-[#B54708]">غير جاهز: {!m.photoUrl ? 'بلا صورة' : 'المواليد ناقصة'}</span>
         )}
       </div>
-      <div className="px-2 py-1.5"><RowActions m={m} isTpa={isTpa} onApprove={onApprove} onEdit={onEdit} onReturn={onReturn} /></div>
+      <div className="px-2 py-1.5"><RowActions m={m} isTpa={isTpa} onApprove={onApprove} onEdit={onEdit} onReturn={onReturn} onDelete={onDelete} onRestore={onRestore} /></div>
     </div>
   );
 }
 
-function RowActions({ m, isTpa, onApprove, onEdit, onReturn }) {
+function RowActions({ m, isTpa, onApprove, onEdit, onReturn, onDelete, onRestore }) {
+  if (m.deleted) {
+    return isTpa ? (
+      <button type="button" onClick={() => onRestore(m)} className={btn.approve}><Icon name="undo" size={14} />استرجاع</button>
+    ) : null;
+  }
   if (LOCKED.has(m.status)) {
     return <span className="inline-flex items-center gap-1.5 text-[13px] text-[#5B6475]"><Icon name="lock" size={15} />مقفل بعد الترحيل</span>;
   }
@@ -729,6 +768,8 @@ function RowActions({ m, isTpa, onApprove, onEdit, onReturn }) {
         {(m.status === 'correct' || m.status === 'modified') && (
           <button type="button" onClick={() => onReturn(m)} className={btn.warn}><Icon name="undo" size={14} />إعادة</button>
         )}
+        <button type="button" onClick={() => onDelete(m)} title="حذف ناعم (قابل للاسترجاع)"
+          className={`${btn.edit} !text-[#B42318] hover:!bg-[#FEF3F2]`}><Icon name="x" size={14} />حذف</button>
       </div>
     );
   }
