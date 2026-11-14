@@ -19,7 +19,7 @@ function toDmy(dob) {
 }
 
 export default function EditDrawer({ m, onClose, onSaved }) {
-  const [form, setForm] = useState({ name: m.name, relation: m.relation, dob: toDmy(m.dob), reason: '' });
+  const [form, setForm] = useState({ name: m.name, jobNo: m.jobNo || '', relation: m.relation, dob: toDmy(m.dob), reason: '' });
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [error, setError] = useState('');
@@ -37,7 +37,7 @@ export default function EditDrawer({ m, onClose, onSaved }) {
     const fd = new FormData();
     fd.set('id', m.id);
     fd.set('version', m.version);
-    for (const k of ['name', 'relation', 'dob', 'reason']) fd.set(k, form[k]);
+    for (const k of ['name', 'jobNo', 'relation', 'dob', 'reason']) fd.set(k, form[k]);
     if (file) fd.set('photo', file);
     const r = await editAction(fd);
     setSaving(false);
@@ -85,6 +85,12 @@ export default function EditDrawer({ m, onClose, onSaved }) {
           <label className="flex flex-col gap-1.5 font-semibold text-[#344054]">
             اسم المستفيد
             <input value={form.name} onChange={set('name')} maxLength={120} required className="h-10 px-3 border border-[#D5DCE6] rounded-[10px] font-normal" />
+          </label>
+          <label className="flex flex-col gap-1.5 font-semibold text-[#344054]">
+            الرقم الوظيفي
+            <input value={form.jobNo} onChange={(e) => { setForm({ ...form, jobNo: e.target.value.replace(/\D/g, '') }); setError(''); }}
+              dir="ltr" inputMode="numeric" maxLength={10} className="h-10 px-3 border border-[#D5DCE6] rounded-[10px] font-normal text-left tabular-nums" />
+            {form.jobNo !== (m.jobNo || '') && <span className="text-xs font-normal text-[#B54708]">يُطبَّق على كل أفراد العائلة.</span>}
           </label>
           <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(150px, 100%), 1fr))' }}>
             <label className="flex flex-col gap-1.5 font-semibold text-[#344054]">

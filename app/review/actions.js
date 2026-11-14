@@ -79,6 +79,7 @@ export async function editAction(formData) {
         id,
         version: formData.get('version'),
         name: formData.get('name'),
+        jobNo: formData.get('jobNo'),
         relation: formData.get('relation'),
         dob,
         reason: formData.get('reason'),
