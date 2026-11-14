@@ -24,14 +24,16 @@ export default function EditDrawer({ m, onClose, onSaved }) {
   const [preview, setPreview] = useState(null);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [merge, setMerge] = useState(null);
   const fileRef = useRef(null);
   const set = (k) => (e) => {
     setForm({ ...form, [k]: e.target.value });
     setError('');
+    setMerge(null);
   };
 
-  async function save(e) {
-    e.preventDefault();
+  async function save(e, confirmMerge = false) {
+    e?.preventDefault();
     if (!form.reason.trim()) return setError('اكتب سبب التعديل قبل الحفظ.');
     setSaving(true);
     const fd = new FormData();
@@ -39,9 +41,11 @@ export default function EditDrawer({ m, onClose, onSaved }) {
     fd.set('version', m.version);
     for (const k of ['name', 'jobNo', 'relation', 'dob', 'reason']) fd.set(k, form[k]);
     if (file) fd.set('photo', file);
+    if (confirmMerge) fd.set('confirmMerge', '1');
     const r = await editAction(fd);
     setSaving(false);
     if (!r.ok) return setError(r.error);
+    if (r.merge) return setMerge(r.merge);
     onSaved(r.view);
   }
 
@@ -88,7 +92,7 @@ export default function EditDrawer({ m, onClose, onSaved }) {
           </label>
           <label className="flex flex-col gap-1.5 font-semibold text-[#344054]">
             الرقم الوظيفي
-            <input value={form.jobNo} onChange={(e) => { setForm({ ...form, jobNo: e.target.value.replace(/\D/g, '') }); setError(''); }}
+            <input value={form.jobNo} onChange={(e) => { setForm({ ...form, jobNo: e.target.value.replace(/\D/g, '') }); setError(''); setMerge(null); }}
               dir="ltr" inputMode="numeric" maxLength={10} className="h-10 px-3 border border-[#D5DCE6] rounded-[10px] font-normal text-left tabular-nums" />
             {form.jobNo !== (m.jobNo || '') && <span className="text-xs font-normal text-[#B54708]">يُطبَّق على كل أفراد العائلة.</span>}
           </label>
@@ -112,6 +116,19 @@ export default function EditDrawer({ m, onClose, onSaved }) {
             <textarea rows={3} value={form.reason} onChange={set('reason')} maxLength={300}
               placeholder="مثال: تصحيح الاسم حسب شهادة الميلاد" className="px-3 py-2.5 border border-[#D5DCE6] rounded-[10px] font-normal resize-y" />
           </label>
+          {merge && (
+            <div role="alert" className="flex flex-col gap-2 px-3.5 py-3 rounded-[10px] bg-[#FFF8F0] border border-[#F0B27A] text-[13px] text-[#344054]">
+              <b className="text-[#B54708]">الرقم {merge.job} لعائلة أخرى. عند الحفظ تُضمّ العائلتان:</b>
+              <span>العائلة الحالية ({merge.moving.length}): {merge.moving.map((x) => `${x.name} (${x.relation || '—'})`).join('، ')}</span>
+              <span>تُضم إلى ({merge.members.length}): {merge.members.map((x) => `${x.name} (${x.relation || '—'})`).join('، ')}</span>
+              {!!merge.duplicates.length && <span className="font-semibold text-[#B42318]">تنبيه تكرار: {merge.duplicates.join('، ')} موجود بالاسم نفسه في العائلة الأخرى.</span>}
+              {merge.twoEmployees && <span className="font-semibold text-[#B42318]">تنبيه: في العائلتين موظف؛ ستصبح العائلة بموظفَين.</span>}
+              <div className="flex gap-2">
+                <button type="button" disabled={saving} onClick={() => save(null, true)} className={btn.primary}>ضم وحفظ</button>
+                <button type="button" onClick={() => setMerge(null)} className={btn.ghost}>إلغاء</button>
+              </div>
+            </div>
+          )}
           {error && <p role="alert" className="m-0 text-[#B42318] font-semibold">{error}</p>}
         </div>
         <div className="flex flex-wrap gap-2 px-6 py-4 border-t border-[#EEF1F5]">

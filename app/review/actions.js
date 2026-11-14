@@ -5,7 +5,7 @@ import { ENTITY_CODES, parseDob } from '../../lib/derive.js';
 import { preparePhoto, writePhoto } from '../../lib/photos.js';
 import { onCloudflare } from '../../lib/db.js';
 import {
-  approve, previewApproval, addBeneficiary, softDelete, restoreDeleted, editBeneficiary, getBeneficiary, returnForEdit, previewForward, forward,
+  approve, previewApproval, addBeneficiary, jobMergeInfo, softDelete, restoreDeleted, editBeneficiary, getBeneficiary, returnForEdit, previewForward, forward,
 } from '../../lib/beneficiaries.js';
 
 // target: { ids } أو { filter } (الفلتر نفسه المعروض، لتحديد «كل المطابق»).
@@ -69,6 +69,12 @@ export async function editAction(formData) {
     if (!b || (u.role === 'entity' && b.entity_id !== u.entityId)) throw new Error('السجل غير موجود.');
     const dob = parseDob(formData.get('dob'));
     if (dob === null) throw new Error('صيغة المواليد غير صحيحة (اكتبه يوم/شهر/سنة، مثل 05/11/2014).');
+    // رقم وظيفي لعائلة أخرى: يُعرض الضمّ للتأكيد قبل أي حفظ (تكرار الأسماء تنبيه لا منع).
+    const confirmMerge = formData.get('confirmMerge') === '1';
+    if (!confirmMerge && /^\d{1,10}$/.test(String(formData.get('jobNo') || ''))) {
+      const merge = await jobMergeInfo(b, formData.get('jobNo'));
+      if (merge) return { merge };
+    }
 
     const photo = await readPhoto(formData);
     // الملف يُكتب أولا باسم جديد، ثم يُسجَّل في القاعدة؛ لو فشل التسجيل يبقى الملف القديم مستخدما.
@@ -84,6 +90,7 @@ export async function editAction(formData) {
         dob,
         reason: formData.get('reason'),
         photoFile,
+        confirmMerge,
       },
       actorName(u),
       entityScope(u)
