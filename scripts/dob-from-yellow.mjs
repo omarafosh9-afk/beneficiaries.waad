@@ -25,6 +25,7 @@ const col = (name) => {
   return i;
 };
 const [cBatch, cSerial, cName, cDob] = ['الدفعة', 'التسلسل', 'الاسم', 'المواليد'].map(col);
+const cRel = head.indexOf('الصلة');
 
 // خلية التاريخ من Excel تُقرأ بمنتصف اليوم حتى لا يرجعها فرق التوقيت يومًا للوراء.
 function dobOf(c) {
@@ -49,6 +50,10 @@ for (let r = 1; r <= range.e.r; r++) {
   if (!dob) { skipped.push(`${name}: المواليد غير صحيحة «${cell(r, cDob)?.w ?? cell(r, cDob)?.v}»`); continue; }
   const b = find.get(ENTITY, Number(cell(r, cBatch)?.v), Number(cell(r, cSerial)?.v));
   if (!b || normalizeAr(b.name) !== normalizeAr(name)) { skipped.push(`${name}: غير موجود في المنظومة بهذه الدفعة والتسلسل`); continue; }
+  // صلة تغيّرت في المنظومة بعد إعداد الجدول = المواليد في الجدول بُنيت على صلة خاطئة؛ تُراجع يدويًا.
+  const rel = cRel >= 0 ? String(cell(r, cRel)?.v ?? '').trim() : '';
+  const relNow = b.relation === 'موظف أساسي' ? 'موظف' : b.relation;
+  if (rel && rel !== relNow) { skipped.push(`${name}: صلته في الجدول «${rel}» وفي المنظومة «${relNow}»؛ راجع مواليده يدويًا`); continue; }
   if ((b.dob || '') === dob) continue;
   fixes.push({ b, dob });
 }
