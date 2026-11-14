@@ -5,7 +5,7 @@ import { ENTITY_CODES, parseDob } from '../../lib/derive.js';
 import { preparePhoto, writePhoto } from '../../lib/photos.js';
 import { onCloudflare } from '../../lib/db.js';
 import {
-  approve, previewApproval, addBeneficiary, jobMergeInfo, setBenStatus, softDelete, restoreDeleted, editBeneficiary, getBeneficiary, returnForEdit, previewForward, forward,
+  approve, previewApproval, addBeneficiary, jobMergeInfo, setBenStatus, previewFixRelations, fixRelations, softDelete, restoreDeleted, editBeneficiary, getBeneficiary, returnForEdit, previewForward, forward,
 } from '../../lib/beneficiaries.js';
 
 // target: { ids } أو { filter } (الفلتر نفسه المعروض، لتحديد «كل المطابق»).
@@ -107,6 +107,15 @@ export async function editAction(formData) {
       throw e;
     }
   });
+}
+
+// تصحيح جماعي لصلة القرابة المخالفة لجنس الاسم (للجهة في جهتها، ولـ TPA في الكل).
+export async function previewFixRelationsAction(target) {
+  return guard(['tpa', 'entity'], async (u) => ({ preview: await previewFixRelations(scopedTarget(u, target), entityScope(u)) }));
+}
+
+export async function fixRelationsAction(target) {
+  return guard(['tpa', 'entity'], async (u) => fixRelations(scopedTarget(u, target), actorName(u), entityScope(u)));
 }
 
 // ---------- عمليات شركة TPA ----------

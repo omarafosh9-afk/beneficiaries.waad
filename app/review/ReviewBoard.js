@@ -10,6 +10,7 @@ import {
 } from './ui';
 import {
   previewApprovalAction, approveAction, returnAction, deleteAction, restoreAction, previewForwardAction, forwardAction,
+  previewFixRelationsAction, fixRelationsAction,
 } from './actions';
 import EditDrawer from './EditDrawer';
 import AddDrawer from './AddDrawer';
@@ -125,7 +126,11 @@ export default function ReviewBoard({ mode, user, entities: ENTITIES = [] }) {
   const reload = () => setReloadKey((k) => k + 1);
 
   const rows = useMemo(() => (data ? (data.families ? data.families.flatMap((f) => f.members) : data.rows) : []), [data]);
-  const canSelect = useCallback((m) => !m.deleted && (isTpa ? isReady(m) : !LOCKED.has(m.status)), [isTpa]);
+  // في فلتر خلط الجنس يُحدَّد أي سجل غير مرحَّل للتصحيح الجماعي؛ غير ذلك TPA تحدد الجاهز للترحيل فقط.
+  const canSelect = useCallback(
+    (m) => !m.deleted && (isTpa && completeness !== 'gender' ? isReady(m) : !LOCKED.has(m.status)),
+    [isTpa, completeness]
+  );
   const selectable = rows.filter(canSelect);
   const allVisSel = selectable.length > 0 && selectable.every((m) => sel.has(m.id));
 
@@ -180,6 +185,24 @@ export default function ReviewBoard({ mode, user, entities: ENTITIES = [] }) {
     say(`تم الترحيل للمطبعة: ${r.batches.map((b) => `دفعة ${b.id} (${b.entity}: ${cardsLabel(b.count)})`).join('، ')}`);
     reload();
   }
+  // تصحيح جماعي للصلة: المحدد إن وُجد، وإلا كل المطابق للفلتر.
+  const fixTarget = () => (allMatching || !sel.size ? { filter: { ...filter } } : { ids: [...sel] });
+  async function openFixRel() {
+    const t = fixTarget();
+    const r = await previewFixRelationsAction(t);
+    if (!r.ok) return say(r.error);
+    setDialog({ kind: 'fixrel', target: t, ...r.preview });
+  }
+  async function doFixRel() {
+    const r = await fixRelationsAction(dialog.target);
+    if (!r.ok) return setDialog({ ...dialog, error: r.error });
+    setDialog(null);
+    setSel(new Set());
+    setAllMatching(false);
+    say(`صُحّحت صلة القرابة لـ ${r.fixed} سجلًا، وأصبحت حالتها «معدل»`);
+    reload();
+  }
+
   async function doDelete() {
     const r = await deleteAction(dialog.member.id, dialog.note);
     if (!r.ok) return setDialog({ ...dialog, error: r.error });
@@ -304,6 +327,7 @@ export default function ReviewBoard({ mode, user, entities: ENTITIES = [] }) {
               <option value="no_photo">نقص صورة</option>
               <option value="no_dob">نقص مواليد</option>
               <option value="no_employee">نقص الموظف (الاسم أو الرقم الوظيفي)</option>
+              <option value="gender">خلط الجنس في الصلة (ابن/ابنة ...)</option>
             </select>
           </Field>
           {!!data?.intakeBatches?.length && (
@@ -329,6 +353,9 @@ export default function ReviewBoard({ mode, user, entities: ENTITIES = [] }) {
             </div>
           )}
           <a href={exportHref} className={btn.ghost}><Icon name="download" />تصدير</a>
+          {completeness === 'gender' && !!data?.total && (
+            <button type="button" className={btn.warn} onClick={openFixRel}><Icon name="check" size={14} />تصحيح الصلة {selCount === null || !sel.size ? '(كل المطابق)' : `(${selCount})`}</button>
+          )}
           <button type="button" className={btn.ghost} onClick={() => setAdding(true)}><Icon name="plus" />إضافة مستفيد</button>
           {isTpa ? null : (
             <button type="button" className={btn.primary} disabled={!allMatching && !sel.size} onClick={() => openApprove()}>
@@ -477,6 +504,21 @@ export default function ReviewBoard({ mode, user, entities: ENTITIES = [] }) {
           {dialog.error && <p role="alert" className="m-0 text-[#B42318] font-semibold">{dialog.error}</p>}
           <div className="flex flex-wrap gap-2">
             <button type="button" onClick={doReturn} className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-[13px] bg-[#B54708] text-white font-semibold"><Icon name="undo" />إعادة مع الملاحظة</button>
+            <button type="button" className={btn.ghost} onClick={() => setDialog(null)}>إلغاء</button>
+          </div>
+        </Dialog>
+      )}
+
+      {dialog?.kind === 'fixrel' && (
+        <Dialog title="تصحيح صلة القرابة" onClose={() => setDialog(null)}>
+          <p className="m-0 text-[#344054]">
+            ستُقلب الصلة لـ <b>{dialog.fix}</b> سجلًا حسب جنس الاسم (ابنة↔ابن، زوجة↔زوج، أم↔أب)، ويصبح كل منها «معدل» مع سبب التعديل.
+          </p>
+          {!!dialog.locked && <p className="m-0 text-[13px] text-[#5B6475]">{dialog.locked} سجل مرحَّل لن يُعدَّل.</p>}
+          <p className="m-0 text-[13px] text-[#B54708]">راجع القائمة أولًا: ما كان صحيحًا (اسم نادر مثلًا) لا تحدده، أو صحّحه فرديًا.</p>
+          {dialog.error && <p role="alert" className="m-0 text-[#B42318] font-semibold">{dialog.error}</p>}
+          <div className="flex flex-wrap gap-2">
+            <button type="button" disabled={!dialog.fix} onClick={doFixRel} className={btn.primary}><Icon name="check" />تصحيح {dialog.fix}</button>
             <button type="button" className={btn.ghost} onClick={() => setDialog(null)}>إلغاء</button>
           </div>
         </Dialog>
@@ -721,6 +763,7 @@ function Row({ m, cols, flat, isTpa, selected, selectable, onToggle, onApprove, 
       <div className="px-2 py-1.5 flex flex-col gap-0.5 text-[13px]">
         <span className={changed('relation') ? 'text-[#1D4ED8]' : 'text-[#344054]'}>{relLabel(m.relation)}</span>
         {changed('relation') && <Prev value={relLabel(m.prev.relation)} />}
+        {m.suggestRel && <span className="text-xs font-semibold text-[#B54708]">المقترح: {relLabel(m.suggestRel)}</span>}
       </div>
       <div className="px-2 py-1.5 flex flex-col items-start gap-0.5 text-[13px]">
         {m.dob ? (
