@@ -207,7 +207,7 @@ export default function ReviewBoard({ mode, user, entities: ENTITIES = [] }) {
     const r = await deleteAction(dialog.member.id, dialog.note);
     if (!r.ok) return setDialog({ ...dialog, error: r.error });
     setDialog(null);
-    say(`حُذف ${dialog.member.name}؛ تجده في تبويب «محذوف» ويمكن استرجاعه`);
+    say(isTpa ? `حُذف ${dialog.member.name}؛ تجده في تبويب «محذوف» ويمكن استرجاعه` : `حُذف ${dialog.member.name}`);
     reload();
   }
 
@@ -527,7 +527,7 @@ export default function ReviewBoard({ mode, user, entities: ENTITIES = [] }) {
       {dialog?.kind === 'delete' && (
         <Dialog title="حذف مستفيد" onClose={() => setDialog(null)}>
           <p className="m-0 text-[#344054]"><b>{dialog.member.name}</b> · {dialog.member.entity}</p>
-          <p className="m-0 text-[13px] text-[#5B6475]">حذف ناعم: يختفي من القوائم ومن جهة العمل، ويبقى في تبويب «محذوف» قابلًا للاسترجاع.</p>
+          <p className="m-0 text-[13px] text-[#5B6475]">{isTpa ? 'حذف ناعم: يختفي من القوائم ومن جهة العمل، ويبقى في تبويب «محذوف» قابلًا للاسترجاع.' : 'يختفي من قائمتك، ويبقى لدى شركة TPA التي تستطيع استرجاعه عند الحاجة.'}</p>
           <label className="flex flex-col gap-1.5 font-semibold text-[#344054]">
             <span>سبب الحذف <span className="text-[#B42318]">*</span></span>
             <textarea rows={2} value={dialog.note} maxLength={300} onChange={(e) => setDialog({ ...dialog, note: e.target.value, error: '' })}
@@ -826,6 +826,8 @@ function RowActions({ m, isTpa, onApprove, onEdit, onReturn, onDelete, onRestore
         className={`${btn.edit} ${m.status === 'needs_edit' ? '!border-[#F0B27A] !text-[#B54708]' : ''}`}>
         <Icon name="pencil" size={14} />تعديل
       </button>
+      <button type="button" onClick={() => onDelete(m)} title="حذف (تستطيع الإدارة استرجاعه)"
+        className={`${btn.edit} !text-[#B42318] hover:!bg-[#FEF3F2]`}><Icon name="x" size={14} />حذف</button>
     </div>
   );
 }

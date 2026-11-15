@@ -118,11 +118,13 @@ export async function fixRelationsAction(target) {
   return guard(['tpa', 'entity'], async (u) => fixRelations(scopedTarget(u, target), actorName(u), entityScope(u)));
 }
 
+// الحذف للإدارة وللجهة (في جهتها)؛ الاسترجاع وتبويب المحذوفات للإدارة فقط.
+export async function deleteAction(id, reason) {
+  return guard(['tpa', 'entity'], async (u) => ({ done: await softDelete(id, reason, actorName(u), entityScope(u)) }));
+}
+
 // ---------- عمليات شركة TPA ----------
 
-export async function deleteAction(id, reason) {
-  return guard(['tpa'], async (u) => ({ done: await softDelete(id, reason, actorName(u)) }));
-}
 
 export async function restoreAction(id) {
   return guard(['tpa'], async (u) => ({ done: await restoreDeleted(id, actorName(u)) }));
