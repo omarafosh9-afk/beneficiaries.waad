@@ -118,7 +118,7 @@ test('legacy adapter round-trips without spurious changes', async () => {
 test('user management: create, set password, edit, deactivate, delete', async () => {
   const U = await import('../lib/users.js');
   const { checkPassword } = await import('../lib/session.js');
-  await assert.rejects(U.createUser({ username: 'ab', displayName: 'x', role: 'tpa' }), /اسم المستخدم/);
+  await assert.rejects(U.createUser({ username: 'a', displayName: 'x', role: 'tpa' }), /اسم المستخدم/);
   await assert.rejects(U.createUser({ username: 'jal1', displayName: 'x', role: 'entity' }), /الجهة/);
   const c = await U.createUser({ username: 'jal1', displayName: 'مراجع', role: 'entity', entityId: 2 });
   await assert.rejects(U.createUser({ username: 'jal1', displayName: 'x', role: 'tpa' }), /من قبل/);
