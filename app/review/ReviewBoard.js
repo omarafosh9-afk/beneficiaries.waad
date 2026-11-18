@@ -54,9 +54,13 @@ export default function ReviewBoard({ mode, user, entities: ENTITIES = [] }) {
   const [headerSlot, setHeaderSlot] = useState(null);
   useEffect(() => setHeaderSlot(document.getElementById('header-actions')), []);
 
-  // تذكّر الجهة المختارة (لحساب TPA في شاشة الجهة).
+  // تذكّر الجهة المختارة (لحساب TPA في شاشة الجهة). روابط مركز المشاكل (?entity=&completeness=issue:...) تتقدّم عليها.
   useEffect(() => {
+    const u = new URLSearchParams(window.location.search);
+    const fromUrl = Number(u.get('entity'));
+    if (u.get('completeness')) setCompleteness(u.get('completeness'));
     if (fixedEntity) return;
+    if (ENTITIES.some((e) => e.id === fromUrl)) return setEntity(fromUrl);
     try {
       const v = Number(localStorage.getItem('review.entity'));
       if (ENTITIES.some((e) => e.id === v)) setEntity(v);
@@ -328,6 +332,7 @@ export default function ReviewBoard({ mode, user, entities: ENTITIES = [] }) {
               <option value="no_dob">نقص مواليد</option>
               <option value="no_employee">نقص الموظف (الاسم أو الرقم الوظيفي)</option>
               <option value="gender">خلط الجنس في الصلة (ابن/ابنة ...)</option>
+              {completeness.startsWith('issue:') && <option value={completeness}>من مركز المشاكل</option>}
             </select>
           </Field>
           {!!data?.intakeBatches?.length && (
