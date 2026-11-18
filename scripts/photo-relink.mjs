@@ -34,6 +34,7 @@ for (const [id, e] of last) {
 const moves = []; // { from, to, photo, file }
 const report = { 'صور من رفع ZIP': photos.length, 'صحيحة': 0, 'تُنقل': 0, 'بلا رقم أو بلا صاحب': 0, 'تعارض': 0 };
 const unsure = [];
+const detach = []; // صور تُفصل عمن يحملها بلا صاحب بديل
 const groups = new Map();
 for (const p of photos) (groups.get(p.at) || groups.set(p.at, []).get(p.at)).push(p);
 for (const [at, list] of groups) {
@@ -43,13 +44,21 @@ for (const [at, list] of groups) {
   const batch = batches.sort((a, b) => score(b) - score(a))[0];
   for (const p of list) {
     const target = rows.find((r) => r.intake_batch === batch && r.list_serial === p.n);
-    if (!target) { report['بلا رقم أو بلا صاحب']++; unsure.push(`${p.file} (رفعة ${at.slice(0, 16)}): لا أحد بالرقم ${p.n} في الدفعة ${batch}، والصورة عند ${p.holder.name}`); continue; }
+    if (!target) {
+      report['بلا رقم أو بلا صاحب']++;
+      // رقمها لا يطابق رقم من يحملها = ليست له؛ تُفصل عنه (صاحبها ليس في المنظومة، والملف يبقى في التخزين).
+      if (p.n !== null && !(p.holder.intake_batch === batch && p.holder.list_serial === p.n)) {
+        detach.push(p);
+        unsure.push(`${p.file}: لا أحد بالرقم ${p.n} في الدفعة ${batch} (صاحبها ليس في المنظومة)؛ تُفصل عن ${p.holder.name}`);
+      } else unsure.push(`${p.file}: لا أحد بالرقم ${p.n ?? '—'} في الدفعة ${batch}؛ تبقى عند ${p.holder.name}`);
+      continue;
+    }
     if (target.id === p.holder.id) { report['صحيحة']++; continue; }
     moves.push({ from: p.holder, to: target, photo: p.holder.photo_file, file: p.file, prev: p.prev, batch });
   }
 }
 // الهدف لديه صورة صحيحة أصلًا (لن تخرج منه) = تعارض، لا يُستبدل.
-const leaving = new Set(moves.map((m) => m.from.id));
+const leaving = new Set([...moves.map((m) => m.from.id), ...detach.map((p) => p.holder.id)]);
 const correctHolders = new Set(photos.filter((p) => !leaving.has(p.holder.id)).map((p) => p.holder.id));
 const ok = [];
 for (const m of moves) {
@@ -59,7 +68,11 @@ for (const m of moves) {
 }
 report['تُنقل'] = ok.length;
 const receivers = new Set(ok.map((m) => m.to.id));
-const losers = ok.filter((m) => !receivers.has(m.from.id));
+const losers = [
+  ...ok.filter((m) => !receivers.has(m.from.id)),
+  ...detach.filter((p) => !receivers.has(p.holder.id)).map((p) => ({ from: p.holder, photo: p.holder.photo_file, file: p.file, prev: p.prev, to: null })),
+];
+report['تُفصل (صاحبها ليس في المنظومة)'] = detach.length;
 
 console.log(`الجهة: ${entity.name_ar}`, report);
 console.log('\nتُنقل:');
@@ -81,7 +94,7 @@ const ev = db.prepare(`INSERT INTO beneficiary_events (beneficiary_id, action, f
 tx(db, () => {
   for (const m of losers) {
     set.run(m.prev, at, m.from.id);
-    ev.run(m.from.id, m.photo, m.prev || '', `الصورة ${m.file} ليست له؛ نُقلت إلى ${m.to.name}`, ACTOR, at);
+    ev.run(m.from.id, m.photo, m.prev || '', `الصورة ${m.file} ليست له؛ ${m.to ? `نُقلت إلى ${m.to.name}` : 'صاحبها ليس في المنظومة'}`, ACTOR, at);
   }
   for (const m of ok) {
     set.run(m.photo, at, m.to.id);
