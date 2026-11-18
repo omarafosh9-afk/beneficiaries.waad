@@ -91,7 +91,7 @@ export default function EditDrawer({ m, isTpa, onClose, onSaved }) {
             <input value={form.name} onChange={set('name')} maxLength={120} required className="h-10 px-3 border border-[#D5DCE6] rounded-[10px] font-normal" />
           </label>
           <label className="flex flex-col gap-1.5 font-semibold text-[#344054]">
-            الرقم الوظيفي
+            <span>الرقم الوظيفي <span className="font-normal text-[#5B6475]">(اختياري)</span></span>
             <input value={form.jobNo} onChange={(e) => { setForm({ ...form, jobNo: e.target.value.replace(/\D/g, '') }); setError(''); setMerge(null); }}
               dir="ltr" inputMode="numeric" maxLength={10} className="h-10 px-3 border border-[#D5DCE6] rounded-[10px] font-normal text-left tabular-nums" />
             {form.jobNo !== (m.jobNo || '') && <span className="text-xs font-normal text-[#B54708]">يُطبَّق على كل أفراد العائلة.</span>}

@@ -67,8 +67,8 @@ export default function AddDrawer({ entities, entityId, onClose, onSaved }) {
             <label htmlFor="add-photo" className={`${btn.ghost} cursor-pointer`}><Icon name="upload" size={16} />{file ? 'استبدال الصورة' : 'رفع صورة'}</label>
           </div>
           <label className="flex flex-col gap-1.5 font-semibold text-[#344054]">
-            الرقم الوظيفي
-            <input value={form.jobNo} onChange={set('jobNo', (v) => v.replace(/\D/g, ''))} required dir="ltr" inputMode="numeric" maxLength={10}
+            <span>الرقم الوظيفي <span className="font-normal text-[#5B6475]">(اختياري)</span></span>
+            <input value={form.jobNo} onChange={set('jobNo', (v) => v.replace(/\D/g, ''))} dir="ltr" inputMode="numeric" maxLength={10}
               placeholder="مثال: 33705" className={`${input} text-left`} />
           </label>
           <label className="flex flex-col gap-1.5 font-semibold text-[#344054]">
@@ -88,7 +88,7 @@ export default function AddDrawer({ entities, entityId, onClose, onSaved }) {
                 className={`${input} text-left tabular-nums tracking-wide`} />
             </label>
           </div>
-          <p className="m-0 text-[13px] text-[#5B6475]">أضف الموظف أولًا إن لم تكن عائلته مسجّلة، ثم أفراد عائلته بنفس الرقم الوظيفي.</p>
+          <p className="m-0 text-[13px] text-[#5B6475]">الرقم الوظيفي يجمع أفراد العائلة: اكتب رقم عائلة موجودة لإضافته إليها. بدونه يُضاف في عائلة مستقلة، ويمكن ضمّه لاحقًا بتعديل الرقم.</p>
           {error && <p role="alert" className="m-0 text-[#B42318] font-semibold">{error}</p>}
         </div>
         <div className="flex flex-wrap gap-2 px-6 py-4 border-t border-[#EEF1F5]">
