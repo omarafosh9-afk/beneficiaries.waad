@@ -742,7 +742,8 @@ function Row({ m, cols, flat, isTpa, selected, selectable, onToggle, onApprove, 
     <div className={`grid items-center min-h-[60px] border-b border-[#EEF1F5] ${selected ? 'bg-[#F5F8FF]' : 'bg-white'}`} style={{ gridTemplateColumns: cols }}>
       <div className="flex justify-center"><Checkbox checked={selected} disabled={!selectable} onChange={onToggle} label={`تحديد ${m.name}`} /></div>
       <div className="px-2 py-1.5"><Photo m={m} /></div>
-      {flat && isTpa && <div className="px-2"><span className="inline-flex h-[26px] items-center px-2.5 rounded-lg bg-[#F2F4F7] text-xs font-semibold whitespace-nowrap">{m.entity}</span></div>}
+      {/* اسم الجهة الطويل يلتف داخل خليته ولا يتجاوزها إلى عمود التسلسل */}
+      {flat && isTpa && <div className="px-2 min-w-0"><span title={m.entity} className="inline-block max-w-full px-2 py-1 rounded-lg bg-[#F2F4F7] text-[11px] leading-tight font-semibold break-words">{m.entity}</span></div>}
       {flat && <div className="px-2"><BatchSerial m={m} /></div>}
       {flat && <div className="px-2"><span dir="ltr" className="font-mono text-[13px] text-[#344054]">{m.jobNo || '—'}</span></div>}
       {flat && <div className="px-2 text-[13px] text-[#344054]">{m.employeeName || '—'}</div>}
