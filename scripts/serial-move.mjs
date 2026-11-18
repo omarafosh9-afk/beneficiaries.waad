@@ -1,35 +1,37 @@
 // ينقل رقم تسلسل (الدفعة/التسلسل) في جهة إلى مستفيد آخر بالاسم الكامل، ويحفظ عمل المدققين:
-// صاحب الرقم الحالي يُحذف حذفًا ناعمًا إن كان سجلًا أضافه سكربت إعادة الربط ولم يُراجَع، وإلا يفقد رقمه فقط.
-// الاستخدام: node scripts/serial-move.mjs --batch=1 --serial=134 --to="الاسم الكامل" [--entity=2] [--apply]
+// صاحب الرقم الحالي يُحذف حذفًا ناعمًا إن كان نسخة لم يعمل عليها أحد (أضافها استيراد أو سكربت، بانتظار التحقق، بلا صورة ولا تعديل)، وإلا يفقد رقمه فقط.
+// الاستخدام: node scripts/serial-move.mjs --batch=1 --serial=134 --to="الاسم الكامل" [--entity=وعد أو رقمها، الافتراضي جليانة] [--apply]
 import path from 'node:path';
 import { openDb, tx, nowIso, DATA_DIR } from '../lib/db-node.js';
 import { normalizeAr } from '../lib/derive.js';
 
 const arg = (k) => process.argv.find((a) => a.startsWith(`--${k}=`))?.slice(k.length + 3);
 const apply = process.argv.includes('--apply');
-const ENTITY = Number(arg('entity') || 2);
+const eq = arg('entity') || '2';
 const batch = Number(arg('batch'));
 const serial = Number(arg('serial'));
 const to = arg('to');
 if (!batch || !serial || !to) throw new Error('الاستخدام: --batch=1 --serial=134 --to="الاسم الكامل"');
 const ACTOR = 'نقل رقم التسلسل';
-const ADDER = 'إعادة ربط تسلسل جليانة بالقوائم';
 
 const db = openDb();
+const ent = db.prepare('SELECT id, name_ar FROM entities WHERE id = ? OR name_ar LIKE ?').get(Number(eq) || -1, `%${eq}%`);
+if (!ent) throw new Error(`الجهة «${eq}» غير موجودة`);
+const ENTITY = ent.id;
 const holder = db.prepare('SELECT * FROM beneficiaries WHERE entity_id = ? AND deleted = 0 AND intake_batch = ? AND list_serial = ?').get(ENTITY, batch, serial);
 const targets = db.prepare('SELECT * FROM beneficiaries WHERE entity_id = ? AND deleted = 0').all(ENTITY)
   .filter((r) => normalizeAr(r.name).replace(/\s+/g, '') === normalizeAr(to).replace(/\s+/g, ''));
 if (targets.length !== 1) throw new Error(`«${to}»: ${targets.length ? `${targets.length} سجلات بهذا الاسم؛ لا يمكن التحديد` : 'غير موجود'}.`);
 const target = targets[0];
 if (holder?.id === target.id) { console.log('الرقم عنده أصلًا.'); process.exit(0); }
-// أضافه سكربت إعادة الربط ولم يلمسه أحد بعدها = نسخة مكررة لصاحب الرقم الجديد.
+// نسخة أُضيفت ولم يعمل عليها أحد (لا تعديل ولا صورة ولا اعتماد) = مكررة لصاحب الرقم الجديد.
 const addedByFix = holder && holder.review_status === 'pending' && !holder.photo_file
-  && db.prepare("SELECT 1 FROM beneficiary_events WHERE beneficiary_id = ? AND action = 'add' AND actor = ?").get(holder.id, ADDER)
-  && !db.prepare("SELECT 1 FROM beneficiary_events WHERE beneficiary_id = ? AND actor <> ?").get(holder.id, ADDER);
+  && db.prepare("SELECT 1 FROM beneficiary_events WHERE beneficiary_id = ? AND action = 'add'").get(holder.id)
+  && !db.prepare("SELECT 1 FROM beneficiary_events WHERE beneficiary_id = ? AND action NOT IN ('add', 'list_sync', 'merge')").get(holder.id);
 const seq = holder?.seq ?? null;
 
 console.log(`الرقم ${batch}/${serial} ← ${target.name} (${target.relation}، ${target.review_status}${target.photo_file ? '، بصورة' : ''})`);
-if (holder) console.log(`صاحبه الحالي: ${holder.name} (${holder.relation}) → ${addedByFix ? 'حذف ناعم (نسخة أضافها سكربت إعادة الربط)' : 'يفقد رقمه فقط'}`);
+if (holder) console.log(`صاحبه الحالي: ${holder.name} (${holder.relation}) → ${addedByFix ? 'حذف ناعم (نسخة لم يعمل عليها أحد)' : 'يفقد رقمه فقط'}`);
 if (target.list_serial != null) console.log(`ملاحظة: ${target.name} يترك رقمه الحالي ${target.intake_batch}/${target.list_serial}`);
 if (!apply) {
   console.log('تجربة فقط؛ أضف --apply للتنفيذ.');
