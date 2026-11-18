@@ -2,7 +2,8 @@
 // كل من في الملف ← الدفعة المحددة برقمه في الملف، والتسلسل العام = رقمه في الملف؛ ومن في الملف وليس في المنظومة يُضاف.
 // يحافظ على عمل المدققين: لا يغيّر اسمًا ولا صلة ولا صورة ولا حالة مراجعة لأي سجل موجود (يملأ المواليد الفارغة فقط).
 // من في المنظومة وليس في الملف لا يُحذف: يفقد رقمه فقط ويُذكر للمراجعة.
-// الاستخدام: node scripts/list-sync.mjs --entity=وعد "<الملف.xlsx>" [--batch=1] [--apply]
+// --regroup: يعيد بناء العائلات من ترتيب الملف لمن هم في المنظومة أيضًا (الموظف يبدأ عائلة، ومن تحته يتبعونه حتى الموظف التالي).
+// الاستخدام: node scripts/list-sync.mjs --entity=وعد "<الملف.xlsx>" [--batch=1] [--regroup] [--apply]
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { openDb, tx, nowIso, DATA_DIR } from '../lib/db-node.js';
@@ -13,6 +14,7 @@ const XLSX = createRequire(import.meta.url)('xlsx');
 const arg = (k) => process.argv.find((a) => a.startsWith(`--${k}=`))?.slice(k.length + 3);
 const file = process.argv.slice(2).find((a) => !a.startsWith('--'));
 const apply = process.argv.includes('--apply');
+const REGROUP = process.argv.includes('--regroup');
 const BATCH = Number(arg('batch') || 1);
 const ACTOR = 'مطابقة أرقام الجهة لقائمتها';
 if (!file || !arg('entity')) throw new Error('الاستخدام: --entity=وعد "<الملف.xlsx>" [--batch=1] [--apply]');
@@ -75,11 +77,36 @@ const adds = list.filter((p) => !match.has(p.serial));
 const orphans = rows.filter((r) => !used.has(r.id));
 const lbl = (r) => (r.intake_batch ? `د${r.intake_batch}·${r.list_serial} (عام ${r.seq ?? '—'})` : '—');
 
+// العائلة المطلوبة لكل رقم حسب ترتيب الملف. الصلة من المنظومة إن وُجد السجل (قد يكون المدقق صحّحها).
+// مفتاح العائلة: مفتاح سجل الموظف الحالي إن لم يأخذه موظف قبله، وإلا مفتاح جديد.
+const plan = new Map();
+{
+  let cur = null;
+  const taken = new Set();
+  for (const p of [...list].sort((a, b) => a.serial - b.serial)) {
+    const b = match.get(p.serial);
+    const rel = b ? b.relation : p.relation;
+    if (isPrincipal(rel) || !cur) {
+      const own = b?.job_no || p.job || b?.family_key;
+      const key = own && !taken.has(own) ? own : `L${BATCH}-${p.serial}`;
+      taken.add(key);
+      cur = { key, head: isPrincipal(rel) ? (b ? b.name : p.name) : null };
+    }
+    plan.set(p.serial, cur);
+  }
+}
+const regroup = !REGROUP ? [] : list.filter((p) => match.has(p.serial)).map((p) => ({ p, b: match.get(p.serial), to: plan.get(p.serial) }))
+  .filter(({ b, to }) => b.family_key !== to.key || (to.head && b.employee_name !== to.head));
+
 console.log(`الجهة: ${entity.name_ar}`, { 'في الملف': list.length, 'مطابق': match.size, 'يتغير رقمه': moves.length, 'يُضاف': adds.length, 'ليس في الملف': orphans.length });
 console.log('\nيتغير رقمه:');
 for (const { p, b } of moves) console.log(`  ${b.name}: ${lbl(b)} ← د${BATCH}·${p.serial} (عام ${p.serial})${!b.dob && p.dob ? ` + المواليد ${p.dob}` : ''}`);
 console.log('\nيُضاف:');
 for (const p of adds) console.log(`  د${BATCH}·${p.serial} ${p.name} (${p.relation || 'بلا صلة'}، ${p.dob || 'بلا مواليد'})`);
+if (REGROUP) {
+  console.log(`\nتتغير عائلته (${regroup.length}):`);
+  for (const { p, b, to } of regroup) console.log(`  ${p.serial} ${b.name} (${b.relation || '—'}): موظفه ${b.employee_name || '—'} ← ${to.head || '— بلا موظف في الملف —'}`);
+}
 console.log('\nليس في الملف (يبقى، ويفقد رقمه):');
 for (const r of orphans) console.log(`  ${lbl(r)} ${r.name} (${r.relation}) · ${r.review_status}${r.photo_file ? ' · بصورة' : ''}`);
 if (!apply) {
@@ -110,16 +137,19 @@ tx(db, () => {
     `INSERT INTO beneficiaries (entity_id, family_key, job_no, employee_name, name, relation, dob, national_id, intake_batch, list_serial, seq, legacy_status, search_key, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'نشط', ?, ?)`
   );
-  let fam = null;
-  let head = null;
   for (const p of [...list].sort((a, b) => a.serial - b.serial)) {
-    const b = famOf.get(p.serial);
-    if (b) { if (isPrincipal(b.relation) || !fam) { fam = b.family_key; head = isPrincipal(b.relation) ? b.name : b.employee_name; } continue; }
-    if (isPrincipal(p.relation) || !fam) { fam = p.job || `N${BATCH}-${p.serial}`; head = isPrincipal(p.relation) ? p.name : null; }
+    if (famOf.get(p.serial)) continue;
+    const { key: fam, head } = plan.get(p.serial);
     const row = { family_key: fam, job_no: p.job || null, employee_name: head, name: p.name, relation: p.relation, dob: p.dob || null, national_id: p.national || null };
     const { lastInsertRowid } = ins.run(entity.id, row.family_key, row.job_no, row.employee_name, row.name, row.relation, row.dob, row.national_id,
       BATCH, p.serial, p.serial, buildSearchKey(row), at);
     ev.run(Number(lastInsertRowid), 'add', null, null, null, `في قائمة الجهة برقم ${p.serial} ولم يكن في المنظومة`, ACTOR, at);
   }
+  const fam = db.prepare('UPDATE beneficiaries SET family_key = ?, employee_name = ?, search_key = ?, version = version + 1, updated_at = ? WHERE id = ?');
+  for (const { b, to } of regroup) {
+    const emp = to.head || b.employee_name;
+    fam.run(to.key, emp, buildSearchKey({ ...b, employee_name: emp }), at, b.id);
+    ev.run(b.id, 'merge', 'family_key', b.family_key, to.key, `عائلته حسب ترتيب قائمة الجهة (الموظف: ${to.head || '—'})`, ACTOR, at);
+  }
 });
-console.log(`تم: ${moves.length} تغيّر رقمه، ${adds.length} أُضيف، ${orphans.length} ليس في الملف.`);
+console.log(`تم: ${moves.length} تغيّر رقمه، ${adds.length} أُضيف، ${regroup.length} تغيّرت عائلته، ${orphans.length} ليس في الملف.`);
