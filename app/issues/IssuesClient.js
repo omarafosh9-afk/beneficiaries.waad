@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { rescanAction, fixIssueAction } from './actions';
+import { rescanAction, fixIssueAction, previewFixAction } from './actions';
 import { btn, Icon, Dialog } from '../review/ui';
 
 const SEV = {
@@ -24,6 +24,14 @@ export default function IssuesClient({ initial }) {
     if (!r.ok) return setMsg({ error: r.error });
     setIssues(r.issues);
     setMsg({ ok: 'أُعيد الفحص.' });
+  }
+
+  async function openFix(i) {
+    setBusy(true);
+    const r = await previewFixAction(i.entityId, i.key);
+    setBusy(false);
+    if (!r.ok) return setMsg({ error: r.error });
+    setConfirm({ ...i, preview: r.preview });
   }
 
   async function fix() {
@@ -69,7 +77,7 @@ export default function IssuesClient({ initial }) {
               </div>
               <div className="flex flex-wrap gap-2">
                 <a href={`/tpa?entity=${i.entityId}&completeness=issue:${i.key}`} className={btn.ghost}><Icon name="table" size={16} />عرض في المراجعة</a>
-                {i.fix && <button type="button" disabled={busy} onClick={() => setConfirm(i)} className={btn.primary}><Icon name="check" size={16} />إصلاح</button>}
+                {i.fix && <button type="button" disabled={busy} onClick={() => openFix(i)} className={btn.primary}><Icon name="check" size={16} />إصلاح جماعي</button>}
               </div>
             </div>
           ))}
@@ -80,9 +88,19 @@ export default function IssuesClient({ initial }) {
         <Dialog title="تأكيد الإصلاح" onClose={() => setConfirm(null)}>
           <p className="m-0"><b>{confirm.entity}</b> · {confirm.title} ({fmt(confirm.count)} سجل)</p>
           <p className="m-0 text-[13px] text-[#344054]">{confirm.fix}</p>
+          {confirm.preview && (
+            <div className="flex flex-col gap-1">
+              <b className="text-[13px]">سيتغير {fmt(confirm.preview.count)} سجل:</b>
+              <div className="max-h-64 overflow-y-auto border border-[#EEF1F5] rounded-lg px-3 py-2 text-[13px] leading-6">
+                {confirm.preview.rows.map((x, k) => <div key={k}>{x}</div>)}
+                {!!confirm.preview.more && <div className="text-[#5B6475]">… و{fmt(confirm.preview.more)} غيرها</div>}
+              </div>
+              {!confirm.preview.count && <p className="m-0 text-[13px] text-[#B54708]">لا يوجد ما يُصلح تلقائيًا بأمان هنا؛ عالجه من «عرض في المراجعة».</p>}
+            </div>
+          )}
           <p className="m-0 text-[13px] text-[#5B6475]">يُسجَّل كل تغيير في سجل التغييرات. يُستحسن «عرض في المراجعة» أولًا للتأكد.</p>
           <div className="flex gap-2">
-            <button type="button" onClick={fix} className={btn.primary}><Icon name="check" />إصلاح</button>
+            <button type="button" onClick={fix} disabled={confirm.preview && !confirm.preview.count} className={btn.primary}><Icon name="check" />إصلاح {confirm.preview ? fmt(confirm.preview.count) : ''}</button>
             <button type="button" onClick={() => setConfirm(null)} className={btn.ghost}>إلغاء</button>
           </div>
         </Dialog>
